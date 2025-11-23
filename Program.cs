@@ -1,98 +1,91 @@
-﻿using MySql.Data.MySqlClient;
+﻿using NekoKeepDB.Classes;
+using static System.Console;
 
 namespace NekoKeepDB
 {
     internal class Program
     {
-        private static readonly string connectionString = "Server=localhost;User ID=root;Pooling=true;";
-        private static MySqlConnection? connection;
-
         static void Main()
         {
-            Connect();
-            CreateAllTables();
+            Database.Connect();
+            Database.CreateAllTables();
 
-            // Test User Creation
-
-
-            Disconnect();
-        }
-
-        static void Connect()
-        {
-            connection = new MySqlConnection(connectionString);
-            connection.Open();
-        }
-
-        static void Disconnect()
-        {
-            if (connection != null)
+            List<string> menu = ["Signup", "Signin"];
+            bool exit = false;
+            while (!exit)
             {
-                connection.Close();
-                connection.Dispose();
-                connection = null;
+                WriteLine();
+                WriteLine("=== MENU ===\n" + string.Join("\n", menu.Select(menuItem => $"[ {menu.IndexOf(menuItem) + 1} ] - {menuItem}")) + "\n[ 0 ] - Exit");
+                Write("What do you want to test? ");
+
+                int selected = int.Parse(ReadLine()!);
+                WriteLine();
+                switch (selected)
+                {
+                    case 0:
+                        {
+                            exit = true;
+                            break;
+                        }
+                    case 1:
+                        {
+                            // ================================== Test User Creation ==================================
+                            WriteLine("=== TEST USER CREATION ===");
+                            Write("Enter User Display Name: ");
+                            string displayName = ReadLine()!;
+
+                            Write("Enter User Email: ");
+                            string email = ReadLine()!;
+                            Write("Enter User Password: ");
+                            string password = ReadLine()!;
+                            string encryptedPassword = Crypto.Encrypt(password);
+
+                            Write("Enter User MPIN: ");
+                            string mpin = ReadLine()!;
+                            string encryptedMpin = Crypto.Encrypt(mpin);
+
+                            Write("Enter Cat Theme Preset ID: ");
+                            int catThemePresetId = int.Parse(ReadLine()!);
+
+                            Database.CreateUser(displayName, email, encryptedPassword, encryptedMpin, catThemePresetId);
+                            break;
+                            // ================================== Test User Creation ==================================
+                        }
+                    case 2:
+                        {
+                            // =================================== Test User Login ===================================
+                            WriteLine("=== TEST USER LOGIN ===");
+                            Write("Enter User Email: ");
+                            string email = ReadLine()!;
+                            Write("Enter User Password: ");
+                            string password = ReadLine()!;
+
+                            bool user = Database.AuthenticateUser(email, password);
+                            if (user)
+                            {
+                                WriteLine($"\n=== USER DEAILS ===\nID: {User.Id}\nDisplay Name: {User.DisplayName}\nEmail: {User.Email}\nCat Preset Id: {User.CatPresetId}");
+
+                                Write("\n\nTest MPIN? (y, n): ");
+                                if (string.Equals(ReadLine()!.ToLower(), "y"))
+                                {
+                                    Write("Enter User MPIN: ");
+                                    string mpin = ReadLine()!;
+                                    bool mpinValid = Crypto.Verify(mpin, User.EncryptedMpin);
+                                    WriteLine(mpinValid ? "MPIN is correct!" : "MPIN is incorrect!");
+                                }
+                            }
+                            break;
+                            // =================================== Test User Login ===================================
+                        }
+                    default:
+                        {
+                            WriteLine("Invalid Selection!");
+                            break;
+                        }
+                }
             }
-        }
 
-        static void CreateAllTables()
-        {
-            string sql = @"
-                CREATE DATABASE IF NOT EXISTS neko_keep;
-                USE neko_keep;
-
-                CREATE TABLE IF NOT EXISTS Users (
-                    user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    display_name VARCHAR(50) NOT NULL,
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    encrypted_password TEXT NOT NULL,
-                    encrypted_mpin TEXT NOT NULL,
-                    cat_preset_id INT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS Tags (
-                    tag_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    display_name VARCHAR(50) NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS Accounts (
-                    account_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
-                    display_name VARCHAR(50) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    encrypted_password TEXT NOT NULL,
-                    note TEXT,
-                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-                );
-
-                CREATE TABLE IF NOT EXISTS Filters (
-                    account_id INT NOT NULL,
-                    tag_id INT NOT NULL,
-                    PRIMARY KEY (account_id, tag_id),
-                    CONSTRAINT fk_filters_account FOREIGN KEY (account_id) REFERENCES Accounts(account_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_filters_tag FOREIGN KEY (tag_id) REFERENCES Tags(tag_id) ON DELETE CASCADE
-                );
-            ";
-
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.ExecuteNonQuery();
-            Console.WriteLine("Success!");
-        }
-
-        static void CreateUser(string displayName, string email, string encryptedPassword, string encryptedMpin, int catPresetId)
-        {
-            string sql = @"
-                INSERT INTO Users (display_name, email, encrypted_password, encrypted_mpin, cat_preset_id)
-                VALUES (@display_name, @email, @encrypted_password, @encrypted_mpin, @cat_preset_id);
-            ";
-
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@display_name", displayName);
-            cmd.Parameters.AddWithValue("@email", email);
-            cmd.Parameters.AddWithValue("@encrypted_password", encryptedPassword);
-            cmd.Parameters.AddWithValue("@encrypted_mpin", encryptedMpin);
-            cmd.Parameters.AddWithValue("@cat_preset_id", catPresetId);
-            cmd.ExecuteNonQuery();
+            Database.Disconnect();
         }
     }
 }
