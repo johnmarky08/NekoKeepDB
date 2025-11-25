@@ -1,6 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
 using NekoKeepDB.Classes;
-using static System.Console;
 
 namespace NekoKeepDB
 {
@@ -9,13 +8,14 @@ namespace NekoKeepDB
         private static readonly string connectionString = "Server=localhost;User ID=root;Pooling=true;";
         private static MySqlConnection? connection;
 
+        // Connect to MySql with connection string
         public static void Connect()
         {
             connection = new MySqlConnection(connectionString);
             connection.Open();
-            WriteLine("Database Successfully Connected!");
         }
 
+        // Dispose and disconnect cuurent MySql connection
         public static void Disconnect()
         {
             if (connection != null)
@@ -26,6 +26,7 @@ namespace NekoKeepDB
             }
         }
 
+        // Table creation
         public static void CreateAllTables()
         {
             string sql = @"
@@ -68,9 +69,9 @@ namespace NekoKeepDB
 
             using var cmd = new MySqlCommand(sql, connection);
             cmd.ExecuteNonQuery();
-            WriteLine("Tables Successfully Created!");
         }
 
+        // User creation
         public static void CreateUser(string displayName, string email, string encryptedPassword, string encryptedMpin, int catPresetId)
         {
             string sql = @"
@@ -85,11 +86,10 @@ namespace NekoKeepDB
             cmd.Parameters.AddWithValue("@encrypted_mpin", encryptedMpin);
             cmd.Parameters.AddWithValue("@cat_preset_id", catPresetId);
             cmd.ExecuteNonQuery();
-
-            WriteLine($"User \"{displayName}\" Successfully Created!");
         }
 
-        public static bool AuthenticateUser(string email, string password)
+        // User authentication - returns 1 if success, 0 if wrong password, -1 if user not found
+        public static int AuthenticateUser(string email, string password)
         {
             string sql = "SELECT * FROM Users WHERE email = @email;";
             using var cmd = new MySqlCommand(sql, connection);
@@ -98,7 +98,9 @@ namespace NekoKeepDB
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
             {
-                if (Crypto.Verify(password, reader.GetString("encrypted_password")))
+                string encryptedPassword = reader.GetString("encrypted_password");
+
+                if (Crypto.Verify(password, encryptedPassword))
                 {
                     int userId = reader.GetInt32("user_id");
                     string displayName = reader.GetString("display_name");
@@ -106,20 +108,44 @@ namespace NekoKeepDB
                     string encryptedMpin = reader.GetString("encrypted_mpin");
                     int catPresetId = reader.GetInt32("cat_preset_id");
 
-                    User.Initialize(userId, displayName, userEmail, encryptedMpin, catPresetId);
-                    return true;
+                    User.Login(userId, displayName, userEmail, encryptedPassword, encryptedMpin, catPresetId);
+                    return 1;
                 }
-                else
-                {
-                    WriteLine("Incorrect password.");
-                    return false;
-                }
+                else return 0;
             }
-            else
-            {
-                WriteLine("User not found.");
-                return false;
-            }
+            else return -1;
+        }
+
+        public static void UpdateUserPassword(int userId, string newEncryptedPassword)
+        {
+            string sql = @"
+                UPDATE Users
+                SET encrypted_password = @new_encrypted_password
+                WHERE user_id = @user_id;
+            ";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@new_encrypted_password", newEncryptedPassword);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.ExecuteNonQuery();
+
+            User.UpdateLocalPassword(newEncryptedPassword);
+        }
+
+        public static void UpdateUserMpin(int userId, string newEncryptedMpin)
+        {
+            string sql = @"
+                UPDATE Users
+                SET encrypted_mpin = @new_encrypted_mpin
+                WHERE user_id = @user_id;
+            ";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@new_encrypted_mpin", newEncryptedMpin);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.ExecuteNonQuery();
+
+            User.UpdateLocalMpin(newEncryptedMpin);
         }
     }
 }

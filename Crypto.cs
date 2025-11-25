@@ -3,7 +3,7 @@
     internal class Crypto
     {
         public static string Encrypt(string text)
-        { 
+        {
             return BCrypt.Net.BCrypt.HashPassword(text);
         }
 
