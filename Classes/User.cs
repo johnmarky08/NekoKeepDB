@@ -36,6 +36,20 @@
             IsAuthenticated = false;
         }
 
+        public static void UpdateLocalDisplayName(string newDisplayName)
+        {
+            DisplayName = newDisplayName;
+        }
+
+        public static void UpdateLocalEmail(string newEmail)
+        {
+            Email = newEmail;
+        }
+
+        public static void UpdateLocalCatPresetId(int newCatPresetId)
+        {
+            CatPresetId = newCatPresetId;
+        }
         public static void UpdateLocalPassword(string newEncryptedPassword)
         {
             EncryptedPassword = newEncryptedPassword;

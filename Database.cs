@@ -147,5 +147,64 @@ namespace NekoKeepDB
 
             User.UpdateLocalMpin(newEncryptedMpin);
         }
+        
+        public static void UpdateUserEmail(int userId, string newEmail)
+        {
+            string sql = @"
+                UPDATE Users
+                SET email = @new_email
+                WHERE user_id = @user_id;
+            ";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@new_email", newEmail);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.ExecuteNonQuery();
+
+            User.UpdateLocalEmail(newEmail);
+        }
+        
+        public static void UpdateUserDisplayName(int userId, string newDisplayName)
+        {
+            string sql = @"
+                UPDATE Users
+                SET display_name = @new_display_name
+                WHERE user_id = @user_id;
+            ";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@new_display_name", newDisplayName);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.ExecuteNonQuery();
+
+            User.UpdateLocalDisplayName(newDisplayName);
+        }
+        
+        public static void UpdateUserCatPresetId(int userId, int newCatPresetId)
+        {
+            string sql = @"
+                UPDATE Users
+                SET cat_preset_id = @new_cat_preset_id
+                WHERE user_id = @user_id;
+            ";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@new_cat_preset_id", newCatPresetId);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+            cmd.ExecuteNonQuery();
+
+            User.UpdateLocalCatPresetId(newCatPresetId);
+        }
+
+        public static void DeleteUser()
+        {
+            string sql = @"DELETE FROM Users WHERE user_id = @user_id";
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@user_id", User.Id);
+            cmd.ExecuteNonQuery();
+
+            User.Logout();
+        }
     }
 }
