@@ -72,11 +72,12 @@ namespace NekoKeepDB
                                 string password = ReadLine()!;
 
                                 int user = Database.AuthenticateUser(email, password);
-                                if (!Utils.ValidateEmail(email)) break;
+                                if (User.Session == null) break;
+                                else if (!Utils.ValidateEmail(email)) break;
                                 else if (!Utils.ValidatePassword(password)) break;
                                 else if (user > 0)
                                 {
-                                    WriteLine($"\n=== USER DEAILS ===\nID: {User.Id}\nDisplay Name: {User.DisplayName}\nEmail: {User.Email}\nCat Preset Id: {User.CatPresetId}");
+                                    WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
 
                                     Write("\n\nTest MPIN? (y, n): ");
                                     if (string.Equals(ReadLine()!.ToLower(), "y"))
@@ -111,7 +112,7 @@ namespace NekoKeepDB
                                 Write("Re-Enter New Password: ");
                                 string newPassword2 = ReadLine()!;
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
                                 else if (!User.VerifyPassword(oldPassword)) WriteLine("Wrong old password!");
                                 else if (!newPassword.Equals(newPassword2)) WriteLine("New password do not match!");
                                 else if (User.VerifyPassword(newPassword)) WriteLine("Your new password must be different from the old password.");
@@ -119,7 +120,7 @@ namespace NekoKeepDB
                                 else
                                 {
                                     string encryptedNewPassword = Crypto.Encrypt(newPassword);
-                                    Database.UpdateUserPassword(User.Id, encryptedNewPassword);
+                                    Database.UpdateUserPassword(User.Session.Id, encryptedNewPassword);
                                     WriteLine("Password changed successfully!");
                                 }
                                 break;
@@ -136,7 +137,7 @@ namespace NekoKeepDB
                                 Write("Re-Enter New MPIN: ");
                                 string newMpin2 = ReadLine()!;
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
                                 else if (!User.VerifyMpin(oldMpin)) WriteLine("Wrong old MPIN!");
                                 else if (!newMpin.Equals(newMpin2)) WriteLine("New MPIN do not match!");
                                 else if (User.VerifyMpin(newMpin)) WriteLine("Your new MPIN must be different from the old MPIN.");
@@ -144,7 +145,7 @@ namespace NekoKeepDB
                                 else
                                 {
                                     string encryptedNewMpin = Crypto.Encrypt(newMpin);
-                                    Database.UpdateUserMpin(User.Id, encryptedNewMpin);
+                                    Database.UpdateUserMpin(User.Session.Id, encryptedNewMpin);
                                     WriteLine("MPIN changed successfully!");
                                 }
                                 break;
@@ -161,14 +162,14 @@ namespace NekoKeepDB
                                 Write("Re-Enter New Email: ");
                                 string newEmail2 = ReadLine()!;
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
-                                else if (!User.Email.Equals(oldEmail)) WriteLine("Wrong old Email!");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
+                                else if (!User.Session.Email.Equals(oldEmail)) WriteLine("Wrong old Email!");
                                 else if (!newEmail.Equals(newEmail2)) WriteLine("New Email do not match!");
-                                else if (User.Email.Equals(newEmail)) WriteLine("Your new Email must be different from the old Email.");
+                                else if (User.Session.Email.Equals(newEmail)) WriteLine("Your new Email must be different from the old Email.");
                                 else if (!Utils.ValidateEmail(newEmail)) break;
                                 else
                                 {
-                                    Database.UpdateUserEmail(User.Id, newEmail);
+                                    Database.UpdateUserEmail(User.Session.Id, newEmail);
                                     WriteLine("Email changed successfully!");
                                 }
                                 break;
@@ -181,11 +182,11 @@ namespace NekoKeepDB
                                 Write("Enter New Display Name: ");
                                 string newDisplayName = ReadLine()!;
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
-                                else if (User.DisplayName.Equals(newDisplayName)) WriteLine("Your new Display Name must be different from the old Display Name.");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
+                                else if (User.Session.DisplayName.Equals(newDisplayName)) WriteLine("Your new Display Name must be different from the old Display Name.");
                                 else
                                 {
-                                    Database.UpdateUserDisplayName(User.Id, newDisplayName);
+                                    Database.UpdateUserDisplayName(User.Session.Id, newDisplayName);
                                     WriteLine("Display Name changed successfully!");
                                 }
                                 break;
@@ -198,11 +199,11 @@ namespace NekoKeepDB
                                 Write("Enter New Cat Preset Id: ");
                                 int newCatPresetId = int.Parse(ReadLine()!);
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
-                                else if (User.CatPresetId == newCatPresetId) WriteLine("Your new Cat Preset Id must be different from the old Cat Preset Id.");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
+                                else if (User.Session.CatPresetId == newCatPresetId) WriteLine("Your new Cat Preset Id must be different from the old Cat Preset Id.");
                                 else
                                 {
-                                    Database.UpdateUserCatPresetId(User.Id, newCatPresetId);
+                                    Database.UpdateUserCatPresetId(User.Session.Id, newCatPresetId);
                                     WriteLine("Cat Preset Id changed successfully!");
                                 }
                                 break;
@@ -211,8 +212,8 @@ namespace NekoKeepDB
                         case 9:
                             {
                                 // ================================ Test View User ================================
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
-                                else WriteLine($"\n=== USER DEAILS ===\nID: {User.Id}\nDisplay Name: {User.DisplayName}\nEmail: {User.Email}\nCat Preset Id: {User.CatPresetId}");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
+                                else WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
                                 break;
                                 // ================================ Test View User ================================
                             }
@@ -221,7 +222,7 @@ namespace NekoKeepDB
                                 // ================================ Test User Deletion ================================
                                 WriteLine("=== TEST CHANGE USER DELETE ===");
 
-                                if (!User.IsAuthenticated) WriteLine("User is not authenticated.");
+                                if (User.Session == null) WriteLine("User is not authenticated.");
                                 else
                                 {
                                     Write("Are you sure you want to delete this account? (y, n): ");
@@ -229,7 +230,7 @@ namespace NekoKeepDB
 
                                     if (ans.Equals("y"))
                                     {
-                                        Database.DeleteUser();
+                                        Database.DeleteUser(User.Session.Id);
                                         WriteLine("User deleted successfully!");
                                     }
                                 }

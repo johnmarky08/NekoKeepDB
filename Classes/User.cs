@@ -1,63 +1,29 @@
-﻿namespace NekoKeepDB.Classes
+﻿using NekoKeepDB.Interfaces;
+
+namespace NekoKeepDB.Classes
 {
-    internal class User
+    public class User
     {
-        public static bool IsAuthenticated { get; private set; }
-        public static int Id { get; private set; }
-        public static string DisplayName { get; private set; }
-        public static string Email { get; private set; }
-        public static int CatPresetId { get; private set; }
+        public static IUser? Session { get; private set; } = null;
         private static string EncryptedPassword { get; set; }
         private static string EncryptedMpin { get; set; }
 
-        public static void Login(int id, string displayName, string email, string encryptedPassword, string encryptedMpin, int catPresetId)
+        public static void Login(IUser user, string encryptedPassword, string encryptedMpin)
         {
-            if (IsAuthenticated) return;
+            if (Session != null) return;
 
-            Id = id;
-            DisplayName = displayName;
-            Email = email;
-            CatPresetId = catPresetId;
+            Session = user;
             EncryptedPassword = encryptedPassword;
             EncryptedMpin = encryptedMpin;
-            IsAuthenticated = true;
         }
 
         public static void Logout()
         {
-            if (!IsAuthenticated) return;
+            if (Session == null) return;
 
-            Id = 0;
-            DisplayName = string.Empty;
-            Email = string.Empty;
-            CatPresetId = 0;
+            Session = null;
             EncryptedPassword = string.Empty;
             EncryptedMpin = string.Empty;
-            IsAuthenticated = false;
-        }
-
-        public static void UpdateLocalDisplayName(string newDisplayName)
-        {
-            DisplayName = newDisplayName;
-        }
-
-        public static void UpdateLocalEmail(string newEmail)
-        {
-            Email = newEmail;
-        }
-
-        public static void UpdateLocalCatPresetId(int newCatPresetId)
-        {
-            CatPresetId = newCatPresetId;
-        }
-        public static void UpdateLocalPassword(string newEncryptedPassword)
-        {
-            EncryptedPassword = newEncryptedPassword;
-        }
-
-        public static void UpdateLocalMpin(string newEncryptedMpin)
-        {
-            EncryptedMpin = newEncryptedMpin;
         }
 
         public static bool VerifyPassword(string password)
@@ -69,6 +35,32 @@
         {
             return Crypto.Verify(mpin, EncryptedMpin);
         }
-    }
 
+        public static void UpdateLocalDisplayName(string newDisplayName)
+        {
+            if (Session == null) return;
+            Session.DisplayName = newDisplayName;
+        }
+
+        public static void UpdateLocalEmail(string newEmail)
+        {
+            if (Session == null) return;
+            Session.Email = newEmail;
+        }
+
+        public static void UpdateLocalCatPresetId(int newCatPresetId)
+        {
+            if (Session == null) return;
+            Session.CatPresetId = newCatPresetId;
+        }
+        public static void UpdateLocalPassword(string newEncryptedPassword)
+        {
+            EncryptedPassword = newEncryptedPassword;
+        }
+
+        public static void UpdateLocalMpin(string newEncryptedMpin)
+        {
+            EncryptedMpin = newEncryptedMpin;
+        }
+    }
 }

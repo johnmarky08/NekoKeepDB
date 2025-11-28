@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using NekoKeepDB.Classes;
+using NekoKeepDB.Interfaces;
 
 namespace NekoKeepDB
 {
@@ -108,7 +109,15 @@ namespace NekoKeepDB
                     string encryptedMpin = reader.GetString("encrypted_mpin");
                     int catPresetId = reader.GetInt32("cat_preset_id");
 
-                    User.Login(userId, displayName, userEmail, encryptedPassword, encryptedMpin, catPresetId);
+                    IUser user = new UserDto()
+                    {
+                        Id = userId,
+                        DisplayName = displayName,
+                        Email = email,
+                        CatPresetId = catPresetId,
+                    };
+
+                    User.Login(user, encryptedPassword, encryptedMpin);
                     return 1;
                 }
                 else return 0;
@@ -196,12 +205,12 @@ namespace NekoKeepDB
             User.UpdateLocalCatPresetId(newCatPresetId);
         }
 
-        public static void DeleteUser()
+        public static void DeleteUser(int userId)
         {
             string sql = @"DELETE FROM Users WHERE user_id = @user_id";
 
             using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@user_id", User.Id);
+            cmd.Parameters.AddWithValue("@user_id", userId);
             cmd.ExecuteNonQuery();
 
             User.Logout();
