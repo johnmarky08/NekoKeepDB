@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<NoWarn>CS8618</NoWarn>
+	<NoWarn>CA2211</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

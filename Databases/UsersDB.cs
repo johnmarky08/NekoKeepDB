@@ -2,78 +2,13 @@
 using NekoKeepDB.Classes;
 using NekoKeepDB.Interfaces;
 
-namespace NekoKeepDB
+namespace NekoKeepDB.Databases
 {
-    internal class Database
+    // All Users Database Queries
+    public class UsersDB : MainDB
     {
-        private static readonly string connectionString = "Server=localhost;User ID=root;Pooling=true;";
-        private static MySqlConnection? connection;
-
-        // Connect to MySql with connection string
-        public static void Connect()
-        {
-            connection = new MySqlConnection(connectionString);
-            connection.Open();
-        }
-
-        // Dispose and disconnect cuurent MySql connection
-        public static void Disconnect()
-        {
-            if (connection != null)
-            {
-                connection.Close();
-                connection.Dispose();
-                connection = null;
-            }
-        }
-
-        // Table creation
-        public static void CreateAllTables()
-        {
-            string sql = @"
-                CREATE DATABASE IF NOT EXISTS neko_keep;
-                USE neko_keep;
-
-                CREATE TABLE IF NOT EXISTS Users (
-                    user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    display_name VARCHAR(50) NOT NULL,
-                    email VARCHAR(255) NOT NULL UNIQUE,
-                    encrypted_password TEXT NOT NULL,
-                    encrypted_mpin TEXT NOT NULL,
-                    cat_preset_id INT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS Tags (
-                    tag_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    display_name VARCHAR(50) NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS Accounts (
-                    account_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
-                    display_name VARCHAR(50) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    encrypted_password TEXT NOT NULL,
-                    note TEXT,
-                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
-                );
-
-                CREATE TABLE IF NOT EXISTS Filters (
-                    account_id INT NOT NULL,
-                    tag_id INT NOT NULL,
-                    PRIMARY KEY (account_id, tag_id),
-                    CONSTRAINT fk_filters_account FOREIGN KEY (account_id) REFERENCES Accounts(account_id) ON DELETE CASCADE,
-                    CONSTRAINT fk_filters_tag FOREIGN KEY (tag_id) REFERENCES Tags(tag_id) ON DELETE CASCADE
-                );
-            ";
-
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.ExecuteNonQuery();
-        }
-
         // User creation
-        public static void CreateUser(string displayName, string email, string encryptedPassword, string encryptedMpin, int catPresetId)
+        public static void CreateUser(IUser user, string encryptedPassword, string encryptedMpin)
         {
             string sql = @"
                 INSERT INTO Users (display_name, email, encrypted_password, encrypted_mpin, cat_preset_id)
@@ -81,17 +16,19 @@ namespace NekoKeepDB
             ";
 
             using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@display_name", displayName);
-            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@display_name", user.DisplayName);
+            cmd.Parameters.AddWithValue("@email", user.Email);
             cmd.Parameters.AddWithValue("@encrypted_password", encryptedPassword);
             cmd.Parameters.AddWithValue("@encrypted_mpin", encryptedMpin);
-            cmd.Parameters.AddWithValue("@cat_preset_id", catPresetId);
+            cmd.Parameters.AddWithValue("@cat_preset_id", user.CatPresetId);
             cmd.ExecuteNonQuery();
         }
 
-        // User authentication - returns 1 if success, 0 if wrong password, -1 if user not found
+        // User authentication - returns 1 if success, 0 if wrong password, -1 if user not found/wrong email
         public static int AuthenticateUser(string email, string password)
         {
+            if (!Utils.ValidateEmail(email)) return -1;
+
             string sql = "SELECT * FROM Users WHERE email = @email;";
             using var cmd = new MySqlCommand(sql, connection);
             cmd.Parameters.AddWithValue("@email", email);
@@ -101,7 +38,7 @@ namespace NekoKeepDB
             {
                 string encryptedPassword = reader.GetString("encrypted_password");
 
-                if (Crypto.Verify(password, encryptedPassword))
+                if (Utils.Verify(password, encryptedPassword))
                 {
                     int userId = reader.GetInt32("user_id");
                     string displayName = reader.GetString("display_name");
@@ -125,8 +62,12 @@ namespace NekoKeepDB
             else return -1;
         }
 
-        public static void UpdateUserPassword(int userId, string newEncryptedPassword)
+        // Updates user password both locally and in database
+        public static void UpdateUserPassword(int userId, string password)
         {
+            if (!Utils.ValidatePassword(password)) return;
+
+            string newEncryptedPassword = Utils.Encrypt(password);
             string sql = @"
                 UPDATE Users
                 SET encrypted_password = @new_encrypted_password
@@ -141,8 +82,12 @@ namespace NekoKeepDB
             User.UpdateLocalPassword(newEncryptedPassword);
         }
 
-        public static void UpdateUserMpin(int userId, string newEncryptedMpin)
+        // Updates user mpin both locally and in database
+        public static void UpdateUserMpin(int userId, string mpin)
         {
+            if (!Utils.ValidateMpin(mpin)) return;
+
+            string newEncryptedMpin = Utils.Encrypt(mpin);
             string sql = @"
                 UPDATE Users
                 SET encrypted_mpin = @new_encrypted_mpin
@@ -156,9 +101,12 @@ namespace NekoKeepDB
 
             User.UpdateLocalMpin(newEncryptedMpin);
         }
-        
+
+        // Updates user email both locally and in database
         public static void UpdateUserEmail(int userId, string newEmail)
         {
+            if (!Utils.ValidateEmail(newEmail)) return;
+
             string sql = @"
                 UPDATE Users
                 SET email = @new_email
@@ -172,7 +120,8 @@ namespace NekoKeepDB
 
             User.UpdateLocalEmail(newEmail);
         }
-        
+
+        // Updates user display name both locally and in database
         public static void UpdateUserDisplayName(int userId, string newDisplayName)
         {
             string sql = @"
@@ -188,7 +137,8 @@ namespace NekoKeepDB
 
             User.UpdateLocalDisplayName(newDisplayName);
         }
-        
+
+        // Updates user cat preset id both locally and in database
         public static void UpdateUserCatPresetId(int userId, int newCatPresetId)
         {
             string sql = @"
@@ -205,6 +155,7 @@ namespace NekoKeepDB
             User.UpdateLocalCatPresetId(newCatPresetId);
         }
 
+        // User Deletion
         public static void DeleteUser(int userId)
         {
             string sql = @"DELETE FROM Users WHERE user_id = @user_id";

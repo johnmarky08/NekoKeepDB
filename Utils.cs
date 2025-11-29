@@ -1,10 +1,37 @@
-﻿using System.Net.Mail;
+﻿using NekoKeepDB.Classes;
+using System.Net.Mail;
 
 namespace NekoKeepDB
 {
-
     internal class Utils
     {
+        private static readonly HashSet<string> AllowedAccountTypes = ["OAuth", "Custom"];
+        public static string Encrypt(string text) => BCrypt.Net.BCrypt.HashPassword(text);
+
+        public static bool Verify(string text, string hash) => BCrypt.Net.BCrypt.Verify(text, hash);
+
+        public static bool IsAuthenticated()
+        {
+            if (User.Session == null)
+            {
+                ThrowError("User is not authenticated.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool ValidateType(string type)
+        {
+            if (!AllowedAccountTypes.Contains(type))
+            {
+                ThrowError("Invalid Type! Only accepts 'OAuth' or 'Custom'");
+                return false;
+            }
+
+            return true;
+        }
+
         public static bool ValidateEmail(string email)
         {
             string trimmed = email.Trim();
@@ -15,7 +42,7 @@ namespace NekoKeepDB
 
                 if (addr.Address != trimmed)
                 {
-                    Console.WriteLine("Invalid email address format.");
+                    ThrowError("Invalid email address format.");
                     return false;
                 }
 
@@ -23,7 +50,7 @@ namespace NekoKeepDB
             }
             catch
             {
-                Console.WriteLine("Invalid email address format.");
+                ThrowError("Invalid email address format.");
                 return false;
             }
         }
@@ -34,31 +61,31 @@ namespace NekoKeepDB
 
             if (password.Length < 8)
             {
-                Console.WriteLine("Password must be at least 8 characters long.");
+                ThrowError("Password must be at least 8 characters long.");
                 isValid = false;
             }
 
             if (!password.Any(char.IsUpper))
             {
-                Console.WriteLine("Password must contain at least one uppercase letter.");
+                ThrowError("Password must contain at least one uppercase letter.");
                 isValid = false;
             }
 
             if (!password.Any(char.IsLower))
             {
-                Console.WriteLine("Password must contain at least one lowercase letter.");
+                ThrowError("Password must contain at least one lowercase letter.");
                 isValid = false;
             }
 
             if (!password.Any(char.IsDigit))
             {
-                Console.WriteLine("Password must contain at least one number.");
+                ThrowError("Password must contain at least one number.");
                 isValid = false;
             }
 
             if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
             {
-                Console.WriteLine("Password must contain at least one special character.");
+                ThrowError("Password must contain at least one special character.");
                 isValid = false;
             }
 
@@ -71,17 +98,22 @@ namespace NekoKeepDB
 
             if (!int.TryParse(mpin, out _))
             {
-                Console.WriteLine("MPIN must contain only whole integers (0-9).");
+                ThrowError("MPIN must contain only whole integers (0-9).");
                 isValid = false;
             }
 
             if (mpin.Length != 6)
             {
-                Console.WriteLine("MPIN must be exactly 6 digits long.");
+                ThrowError("MPIN must be exactly 6 digits long.");
                 isValid = false;
             }
 
             return isValid;
+        }
+
+        public static void ThrowError(string message)
+        {
+            Console.WriteLine(message);
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using NekoKeepDB.Classes;
+using NekoKeepDB.Databases;
+using NekoKeepDB.Interfaces;
 using static System.Console;
 
 namespace NekoKeepDB
@@ -7,9 +9,10 @@ namespace NekoKeepDB
     {
         static void Main()
         {
-            Database.Connect();
+            MainDB.Connect();
             WriteLine("Database Successfully Connected!");
-            Database.CreateAllTables();
+            // MainDB.DropAllTables(); // Uncomment to drop tables first
+            MainDB.CreateAllTables();
             WriteLine("Tables Successfully Created!");
 
             List<string> userMenu = ["Register", "Login", "Logout", "Change Password", "Change MPIN", "Change Email", "Change Display Name", "Change Cat Theme", "View User Info", "Delete Account"];
@@ -30,7 +33,7 @@ namespace NekoKeepDB
                     {
                         case 0:
                             {
-                                Database.Disconnect();
+                                MainDB.Disconnect();
                                 return;
                             }
                         case 1:
@@ -47,17 +50,23 @@ namespace NekoKeepDB
                                 Write("Enter User Password: ");
                                 string password = ReadLine()!;
                                 if (!Utils.ValidatePassword(password)) break;
-                                string encryptedPassword = Crypto.Encrypt(password);
+                                string encryptedPassword = Utils.Encrypt(password);
 
                                 Write("Enter User MPIN: ");
                                 string mpin = ReadLine()!;
                                 if (!Utils.ValidateMpin(mpin)) break;
-                                string encryptedMpin = Crypto.Encrypt(mpin);
+                                string encryptedMpin = Utils.Encrypt(mpin);
 
                                 Write("Enter Cat Theme Preset ID: ");
                                 int catThemePresetId = int.Parse(ReadLine()!);
 
-                                Database.CreateUser(displayName, email, encryptedPassword, encryptedMpin, catThemePresetId);
+                                IUser user = new UserDto() 
+                                {
+                                    DisplayName = displayName,
+                                    Email = email,
+                                    CatPresetId = catThemePresetId,
+                                };
+                                UsersDB.CreateUser(user, encryptedPassword, encryptedMpin);
                                 WriteLine($"User \"{displayName}\" Successfully Created!");
                                 break;
                                 // ================================== Test User Creation ==================================
@@ -71,7 +80,7 @@ namespace NekoKeepDB
                                 Write("Enter User Password: ");
                                 string password = ReadLine()!;
 
-                                int user = Database.AuthenticateUser(email, password);
+                                int user = UsersDB.AuthenticateUser(email, password);
                                 if (User.Session == null) break;
                                 else if (!Utils.ValidateEmail(email)) break;
                                 else if (!Utils.ValidatePassword(password)) break;
@@ -119,8 +128,7 @@ namespace NekoKeepDB
                                 else if (!Utils.ValidatePassword(newPassword)) break;
                                 else
                                 {
-                                    string encryptedNewPassword = Crypto.Encrypt(newPassword);
-                                    Database.UpdateUserPassword(User.Session.Id, encryptedNewPassword);
+                                    UsersDB.UpdateUserPassword(User.Session.Id, newPassword);
                                     WriteLine("Password changed successfully!");
                                 }
                                 break;
@@ -144,8 +152,7 @@ namespace NekoKeepDB
                                 else if (!Utils.ValidateMpin(newMpin)) break;
                                 else
                                 {
-                                    string encryptedNewMpin = Crypto.Encrypt(newMpin);
-                                    Database.UpdateUserMpin(User.Session.Id, encryptedNewMpin);
+                                    UsersDB.UpdateUserMpin(User.Session.Id, newMpin);
                                     WriteLine("MPIN changed successfully!");
                                 }
                                 break;
@@ -169,7 +176,7 @@ namespace NekoKeepDB
                                 else if (!Utils.ValidateEmail(newEmail)) break;
                                 else
                                 {
-                                    Database.UpdateUserEmail(User.Session.Id, newEmail);
+                                    UsersDB.UpdateUserEmail(User.Session.Id, newEmail);
                                     WriteLine("Email changed successfully!");
                                 }
                                 break;
@@ -186,7 +193,7 @@ namespace NekoKeepDB
                                 else if (User.Session.DisplayName.Equals(newDisplayName)) WriteLine("Your new Display Name must be different from the old Display Name.");
                                 else
                                 {
-                                    Database.UpdateUserDisplayName(User.Session.Id, newDisplayName);
+                                    UsersDB.UpdateUserDisplayName(User.Session.Id, newDisplayName);
                                     WriteLine("Display Name changed successfully!");
                                 }
                                 break;
@@ -203,7 +210,7 @@ namespace NekoKeepDB
                                 else if (User.Session.CatPresetId == newCatPresetId) WriteLine("Your new Cat Preset Id must be different from the old Cat Preset Id.");
                                 else
                                 {
-                                    Database.UpdateUserCatPresetId(User.Session.Id, newCatPresetId);
+                                    UsersDB.UpdateUserCatPresetId(User.Session.Id, newCatPresetId);
                                     WriteLine("Cat Preset Id changed successfully!");
                                 }
                                 break;
@@ -230,12 +237,62 @@ namespace NekoKeepDB
 
                                     if (ans.Equals("y"))
                                     {
-                                        Database.DeleteUser(User.Session.Id);
+                                        UsersDB.DeleteUser(User.Session.Id);
                                         WriteLine("User deleted successfully!");
                                     }
                                 }
                                 break;
                                 // ================================ Test User Deletion ================================
+                            }
+                        case 11:
+                            {
+                                // ================================== Test Account Creation ==================================
+                                WriteLine("=== TEST ACCOUNT CREATION ===");
+                                if (Utils.IsAuthenticated()) break;
+                                
+                                Write("Enter Account Display Name: ");
+                                string displayName = ReadLine()!;
+
+                                Write("Enter Account Note (Optional): ");
+                                string? note = ReadLine();
+
+                                Write("Enter Account Email: ");
+                                string email = ReadLine()!;
+                                if (!Utils.ValidateEmail(email)) break;
+                                
+                                Write("Enter Account Type: ");
+                                string type = ReadLine()!;
+                                if (!Utils.ValidateType(type))
+                                {
+                                    WriteLine("Invalid Type!");
+                                    break;
+                                }
+
+                                if (type.Equals("OAuth"))
+                                {
+                                    Write("Enter Account Provider: ");
+                                    string provider = ReadLine()!;
+                                    IOAuthAccount acc = new OAuthAccountDto()
+                                    {
+                                        UserId = User.Session!.Id,
+                                        Email = email,
+                                        DisplayName = displayName,
+                                        Provider = provider,
+                                    };
+                                    OAuthAccount oAuthAccount = new(acc);
+
+                                }
+                                else
+                                {
+                                    Write("Enter User Password: ");
+                                    string password = ReadLine()!;
+                                    if (!Utils.ValidatePassword(password)) break;
+                                    string encryptedPassword = Utils.Encrypt(password);
+                                }
+
+                                WriteLine($"Account \"{displayName}\" Successfully Created!");
+                                break;
+                                // ================================== Test User Creation ==================================
                             }
                         default:
                             {
