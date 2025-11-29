@@ -5,21 +5,22 @@ namespace NekoKeepDB.Classes
 {
     public abstract class Account
     {
+        public abstract Account ViewAccount();
     }
 
     public class OAuthAccount : Account
     {
-        public OAuthAccount(IOAuthAccount oAuthAccount)
+        public override OAuthAccount ViewAccount()
         {
-            AccountsDB.CreateAccount(oAuthAccount);
+            throw new NotImplementedException();
         }
     }
 
     public class CustomAccount : Account
     {
-        public CustomAccount(ICustomAccount customAccount)
+        public override CustomAccount ViewAccount()
         {
-            AccountsDB.CreateAccount(customAccount);
+            throw new NotImplementedException();
         }
     }
 }

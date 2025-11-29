@@ -7,6 +7,7 @@
         string DisplayName { get; set; }
         string Email { get; set; }
         string? Note { get; set; }
+        List<ITag> Tags { get; set; }
     }
     public interface IOAuthAccount : IAccount
     {
@@ -25,6 +26,7 @@
         public required string DisplayName { get; set; }
         public required string Email { get; set; }
         public required string Provider { get; set; }
+        public required List<ITag> Tags { get; set; }
         public string? Note { get; set; }
     }
 
@@ -35,6 +37,7 @@
         public required string DisplayName { get; set; }
         public required string Email { get; set; }
         public required string Password { get; set; }
+        public required List<ITag> Tags { get; set; }
         public string? Note { get; set; }
     }
 }

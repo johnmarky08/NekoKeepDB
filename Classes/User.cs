@@ -32,12 +32,12 @@ namespace NekoKeepDB.Classes
 
         public static bool VerifyPassword(string password)
         {
-            return Utils.Verify(password, EncryptedPassword!);
+            return Utils.BCryptVerify(password, EncryptedPassword!);
         }
 
         public static bool VerifyMpin(string mpin)
         {
-            return Utils.Verify(mpin, EncryptedMpin!);
+            return Utils.BCryptVerify(mpin, EncryptedMpin!);
         }
 
         public static void UpdateLocalDisplayName(string newDisplayName)

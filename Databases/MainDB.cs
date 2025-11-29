@@ -4,13 +4,12 @@ namespace NekoKeepDB.Databases
 {
     public class MainDB
     {
-        private static readonly string connectionString = "Server=localhost;User ID=root;Pooling=true;";
         protected static MySqlConnection? connection;
 
         // Connect to MySql with connection string
         public static void Connect()
         {
-            connection = new MySqlConnection(connectionString);
+            connection = new MySqlConnection(Environment.GetEnvironmentVariable("CONNECTION_STRING"));
             connection.Open();
         }
 
@@ -69,7 +68,7 @@ namespace NekoKeepDB.Databases
                     display_name VARCHAR(50) NOT NULL,
                     email VARCHAR(50) NOT NULL,
                     provider VARCHAR(50) DEFAULT NULL,
-                    encrypted_password TEXT DEFAULT NULL,
+                    encrypted_password BLOB DEFAULT NULL,
                     note TEXT DEFAULT NULL,
                     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE

@@ -9,6 +9,7 @@ namespace NekoKeepDB
     {
         static void Main()
         {
+            DotNetEnv.Env.Load();
             MainDB.Connect();
             WriteLine("Database Successfully Connected!");
             // MainDB.DropAllTables(); // Uncomment to drop tables first
@@ -24,13 +25,18 @@ namespace NekoKeepDB
             while (true)
             {
                 WriteLine();
-                Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU (SOON) ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU (SOON) ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ 0 ] - Exit\n\nWhat do you want to test? ");
+                Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU (SOON) ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
 
                 if (int.TryParse(ReadLine(), out int selected))
                 {
                     Clear();
                     switch (selected)
                     {
+                        case -1:
+                            {
+                                WriteLine("Master Key: " + Crypto.GenerateMasterKeyBase64());
+                                return;
+                            }
                         case 0:
                             {
                                 MainDB.Disconnect();
@@ -50,12 +56,12 @@ namespace NekoKeepDB
                                 Write("Enter User Password: ");
                                 string password = ReadLine()!;
                                 if (!Utils.ValidatePassword(password)) break;
-                                string encryptedPassword = Utils.Encrypt(password);
+                                string encryptedPassword = Utils.BCryptEncrypt(password);
 
                                 Write("Enter User MPIN: ");
                                 string mpin = ReadLine()!;
                                 if (!Utils.ValidateMpin(mpin)) break;
-                                string encryptedMpin = Utils.Encrypt(mpin);
+                                string encryptedMpin = Utils.BCryptEncrypt(mpin);
 
                                 Write("Enter Cat Theme Preset ID: ");
                                 int catThemePresetId = int.Parse(ReadLine()!);
@@ -248,13 +254,17 @@ namespace NekoKeepDB
                             {
                                 // ================================== Test Account Creation ==================================
                                 WriteLine("=== TEST ACCOUNT CREATION ===");
-                                if (Utils.IsAuthenticated()) break;
-                                
+                                if (!Utils.IsAuthenticated()) break;
+
                                 Write("Enter Account Display Name: ");
                                 string displayName = ReadLine()!;
 
                                 Write("Enter Account Note (Optional): ");
                                 string? note = ReadLine();
+                                note = string.IsNullOrWhiteSpace(note) ? null : note;
+                                
+                                Write("Enter Account Tag IDs (comma-separated): ");
+                                List<ITag> tags = ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) })).ToList();
 
                                 Write("Enter Account Email: ");
                                 string email = ReadLine()!;
@@ -272,27 +282,133 @@ namespace NekoKeepDB
                                 {
                                     Write("Enter Account Provider: ");
                                     string provider = ReadLine()!;
-                                    IOAuthAccount acc = new OAuthAccountDto()
+                                    IOAuthAccount oAuthAccount = new OAuthAccountDto()
                                     {
                                         UserId = User.Session!.Id,
                                         Email = email,
                                         DisplayName = displayName,
                                         Provider = provider,
+                                        Tags = tags,
+                                        Note = note,
                                     };
-                                    OAuthAccount oAuthAccount = new(acc);
-
+                                    AccountsDB.CreateAccount(oAuthAccount);
                                 }
                                 else
                                 {
                                     Write("Enter User Password: ");
                                     string password = ReadLine()!;
-                                    if (!Utils.ValidatePassword(password)) break;
-                                    string encryptedPassword = Utils.Encrypt(password);
+                                    ICustomAccount customAccount = new CustomAccountDto()
+                                    {
+                                        UserId = User.Session!.Id,
+                                        Email = email,
+                                        DisplayName = displayName,
+                                        Password = password,
+                                        Tags = tags,
+                                        Note = note,
+                                    };
+                                    AccountsDB.CreateAccount(customAccount);
                                 }
 
                                 WriteLine($"Account \"{displayName}\" Successfully Created!");
                                 break;
-                                // ================================== Test User Creation ==================================
+                                // ================================== Test Account Creation ==================================
+                            }
+                        case 12:
+                            {
+                                // ================================== Test Account Retrieval ==================================
+                                WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
+                                if (!Utils.IsAuthenticated()) break;
+
+                                var accounts = AccountsDB.RetrieveAccounts();
+
+                                WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                foreach (IOAuthAccount account in accounts.Item1)
+                                {
+                                    WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Note: {account.Note}");
+                                }
+                                
+                                WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                foreach (ICustomAccount account in accounts.Item2)
+                                {
+                                    WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Password: {account.Password} - Note: {account.Note}");
+                                }
+
+                                break;
+                                // ================================== Test Account Retrieval ==================================
+                            }
+                        case 19:
+                            {
+                                // ================================== Test Tag Creation ==================================
+                                WriteLine("=== TEST TAG CREATION ===");
+                                if (!Utils.IsAuthenticated()) break;
+
+                                Write("Enter Tag Display Name: ");
+                                string displayName = ReadLine()!;
+
+                                TagsDB.CreateTag(displayName);
+
+                                WriteLine($"Tag \"{displayName}\" Successfully Created!");
+                                break;
+                                // ================================== Test Tag Creation ==================================
+                            }
+                        case 20:
+                            {
+                                // ================================== Test Tag Retrieval ==================================
+                                WriteLine("=== TEST TAG RETRIEVAL ===");
+                                if (!Utils.IsAuthenticated()) break;
+                                List<ITag> tags = TagsDB.RetrieveTags();
+
+                                foreach (ITag tag in tags) WriteLine($"[ {tag.Id} ] - {tag.DisplayName}");
+
+                                break;
+                                // ================================== Test Tag Retrieval ==================================
+                            }
+                        case 21:
+                            {
+                                // ================================== Test Modify Tag ==================================
+                                WriteLine("=== TEST TAG MODIFICATION ===");
+                                if (!Utils.IsAuthenticated()) break;
+
+                                Write("Enter Tag ID: ");
+                                int tagId = int.Parse(ReadLine()!);
+                                Write("Enter New Tag Display Name: ");
+                                string displayName = ReadLine()!;
+
+                                if (TagsDB.RetrieveTag(tagId) == null)
+                                {
+                                    WriteLine("Invalid Tag ID!");
+                                    break;
+                                }
+
+                                ITag tag = new TagDto()
+                                {
+                                    Id = tagId,
+                                    DisplayName = displayName,
+                                };
+                                TagsDB.UpdateTag(tag);
+
+                                WriteLine($"Tag \"{displayName}\" Successfully Edited!");
+                                break;
+                                // ================================== Test Modify Tag ==================================
+                            }
+                        case 22:
+                            {
+                                // ================================== Test Tag Deletion ==================================
+                                WriteLine("=== TEST TAG DELETION ===");
+                                if (!Utils.IsAuthenticated()) break;
+
+                                Write("Enter Tag ID: ");
+                                int tagId = int.Parse(ReadLine()!);
+                                if (TagsDB.RetrieveTag(tagId) == null)
+                                {
+                                    WriteLine("Invalid Tag ID!");
+                                    break;
+                                }
+
+                                TagsDB.DeleteTag(tagId);
+                                WriteLine("Tag Successfully Deleted!");
+                                break;
+                                // ================================== Test Tag Deletion ==================================
                             }
                         default:
                             {

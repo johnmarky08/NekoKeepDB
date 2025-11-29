@@ -38,7 +38,7 @@ namespace NekoKeepDB.Databases
             {
                 string encryptedPassword = reader.GetString("encrypted_password");
 
-                if (Utils.Verify(password, encryptedPassword))
+                if (Utils.BCryptVerify(password, encryptedPassword))
                 {
                     int userId = reader.GetInt32("user_id");
                     string displayName = reader.GetString("display_name");
@@ -67,7 +67,7 @@ namespace NekoKeepDB.Databases
         {
             if (!Utils.ValidatePassword(password)) return;
 
-            string newEncryptedPassword = Utils.Encrypt(password);
+            string newEncryptedPassword = Utils.BCryptEncrypt(password);
             string sql = @"
                 UPDATE Users
                 SET encrypted_password = @new_encrypted_password
@@ -87,7 +87,7 @@ namespace NekoKeepDB.Databases
         {
             if (!Utils.ValidateMpin(mpin)) return;
 
-            string newEncryptedMpin = Utils.Encrypt(mpin);
+            string newEncryptedMpin = Utils.BCryptEncrypt(mpin);
             string sql = @"
                 UPDATE Users
                 SET encrypted_mpin = @new_encrypted_mpin

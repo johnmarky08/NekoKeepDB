@@ -6,9 +6,9 @@ namespace NekoKeepDB
     internal class Utils
     {
         private static readonly HashSet<string> AllowedAccountTypes = ["OAuth", "Custom"];
-        public static string Encrypt(string text) => BCrypt.Net.BCrypt.HashPassword(text);
+        public static string BCryptEncrypt(string text) => BCrypt.Net.BCrypt.HashPassword(text);
 
-        public static bool Verify(string text, string hash) => BCrypt.Net.BCrypt.Verify(text, hash);
+        public static bool BCryptVerify(string text, string hash) => BCrypt.Net.BCrypt.Verify(text, hash);
 
         public static bool IsAuthenticated()
         {
