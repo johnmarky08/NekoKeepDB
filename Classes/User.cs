@@ -66,5 +66,25 @@ namespace NekoKeepDB.Classes
         {
             EncryptedMpin = newEncryptedMpin;
         }
+
+        public static List<Account> ViewAccounts(bool sortByDate, bool descending)
+        {
+            List<Account> accounts = Session!.Accounts!;
+
+            if (sortByDate)
+            {
+                accounts = descending
+                    ? [.. accounts.OrderByDescending(a => a.ViewAccount().UpdatedAt)]
+                    : [.. accounts.OrderBy(a => a.ViewAccount().UpdatedAt)];
+            }
+            else
+            {
+                accounts = descending
+                    ? [.. accounts.OrderByDescending(a => a.ViewAccount().DisplayName, StringComparer.OrdinalIgnoreCase)]
+                    : [.. accounts.OrderBy(a => a.ViewAccount().DisplayName, StringComparer.OrdinalIgnoreCase)];
+            }
+
+            return accounts;
+        }
     }
 }

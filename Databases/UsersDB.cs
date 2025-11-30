@@ -45,6 +45,7 @@ namespace NekoKeepDB.Databases
                     string userEmail = reader.GetString("email");
                     string encryptedMpin = reader.GetString("encrypted_mpin");
                     int catPresetId = reader.GetInt32("cat_preset_id");
+                    reader.Close();
 
                     IUser user = new UserDto()
                     {
@@ -52,14 +53,23 @@ namespace NekoKeepDB.Databases
                         DisplayName = displayName,
                         Email = email,
                         CatPresetId = catPresetId,
+                        Accounts = AccountsDB.RetrieveAccounts(userId)
                     };
 
                     User.Login(user, encryptedPassword, encryptedMpin);
                     return 1;
                 }
-                else return 0;
+                else
+                {
+                    reader.Close();
+                    return 0;
+                }
             }
-            else return -1;
+            else
+            {
+                reader.Close();
+                return -1;
+            }
         }
 
         // Updates user password both locally and in database

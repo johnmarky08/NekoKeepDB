@@ -31,7 +31,7 @@ namespace NekoKeepDB.Databases
             while (reader.Read()) tagsIds.Add(reader.GetInt32("tag_id"));
             reader.Close();
 
-            foreach (int tagId in tagsIds) tags.Add(TagsDB.RetrieveTag(tagId)!);
+            foreach (int tagId in tagsIds) tags.Add(RetrieveTag(tagId)!);
 
             return tags;
         }
@@ -52,8 +52,10 @@ namespace NekoKeepDB.Databases
                     DisplayName = reader.GetString("display_name"),
                     Id = tagId
                 };
+                reader.Close();
                 return tag;
             }
+            reader.Close();
             return null;
         }
 
@@ -75,6 +77,8 @@ namespace NekoKeepDB.Databases
                 };
                 tags.Add(tag);
             }
+            reader.Close();
+
             return tags;
         }
 

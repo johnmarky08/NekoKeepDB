@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using NekoKeepDB.Classes;
 using NekoKeepDB.Interfaces;
 
 namespace NekoKeepDB.Databases
@@ -79,19 +80,28 @@ namespace NekoKeepDB.Databases
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
             {
+                int id = reader.GetInt32("account_id");
+                int userId = reader.GetInt32("user_id");
+                string displayName = reader.GetString("display_name");
+                string email = reader.GetString("email");
+                string provider = reader.GetString("provider");
+                string note = reader.GetString("note");
+                reader.Close();
+
                 IOAuthAccount account = new OAuthAccountDto()
                 {
-                    Id = reader.GetInt32("account_id"),
-                    UserId = reader.GetInt32("user_id"),
-                    DisplayName = reader.GetString("display_name"),
-                    Email = reader.GetString("email"),
-                    Provider = reader.GetString("provider"),
+                    Id = id,
+                    UserId = userId,
+                    DisplayName = displayName,
+                    Email = email,
+                    Provider = provider,
                     Tags = TagsDB.RetriveTags(accountId),
-                    Note = reader.GetString("note"),
+                    Note = note,
                 };
                 return account;
             }
 
+            reader.Close();
             return null;
         }
 
@@ -107,27 +117,35 @@ namespace NekoKeepDB.Databases
             if (reader.Read())
             {
                 int ord = reader.GetOrdinal("encrypted_password");
+                int id = reader.GetInt32("account_id");
+                int userId = reader.GetInt32("user_id");
+                string displayName = reader.GetString("display_name");
+                string email = reader.GetString("email");
+                string password = Crypto.Decrypt(reader.GetFieldValue<byte[]>(ord))!;
+                string note = reader.GetString("note");
+
+                reader.Close();
                 ICustomAccount account = new CustomAccountDto()
                 {
-                    Id = reader.GetInt32("account_id"),
-                    UserId = reader.GetInt32("user_id"),
-                    DisplayName = reader.GetString("display_name"),
-                    Email = reader.GetString("email"),
-                    Password = Crypto.Decrypt(reader.GetFieldValue<byte[]>(ord))!,
+                    Id = id,
+                    UserId = userId,
+                    DisplayName = displayName,
+                    Email = email,
+                    Password = password,
                     Tags = TagsDB.RetriveTags(accountId),
-                    Note = reader.GetString("note"),
+                    Note = note,
                 };
                 return account;
             }
 
+            reader.Close();
             return null;
         }
 
         // Retrieve all Accounts
-        public static (List<IOAuthAccount>, List<ICustomAccount>) RetrieveAccounts()
+        public static List<Account> RetrieveAccounts(int userId)
         {
-            List<IOAuthAccount> oAuthAccounts = [];
-            List<ICustomAccount> customAccounts = [];
+            List<Account> accounts = [];
             var rows = new List<(
                 int AccountId,
                 string Type,
@@ -136,10 +154,14 @@ namespace NekoKeepDB.Databases
                 string Email,
                 string? Provider,
                 string? Note,
-                byte[]? EncryptedPassword
+                byte[]? EncryptedPassword,
+                DateTime UpdatedAt
             )>();
-            string sql = "SELECT * FROM Accounts;";
+
+            string sql = @"SELECT * FROM Accounts WHERE user_id = @user_id;";
             using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+
             using var reader = cmd.ExecuteReader();
 
             while (reader.Read())
@@ -158,7 +180,8 @@ namespace NekoKeepDB.Databases
                     Email: reader.GetString("email"),
                     Provider: reader.IsDBNull(ordProvider) ? null : reader.GetString(ordProvider),
                     Note: reader.IsDBNull(ordNote) ? null : reader.GetString(ordNote),
-                    EncryptedPassword: reader.IsDBNull(ordEncrypted) ? null : reader.GetFieldValue<byte[]>(ordEncrypted)
+                    EncryptedPassword: reader.IsDBNull(ordEncrypted) ? null : reader.GetFieldValue<byte[]>(ordEncrypted),
+                    UpdatedAt: reader.GetDateTime("updated_at")
                 ));
             }
             reader.Close();
@@ -167,7 +190,7 @@ namespace NekoKeepDB.Databases
             {
                 if (row.Type == "OAuth")
                 {
-                    IOAuthAccount oAuthAccount = new OAuthAccountDto()
+                    IOAuthAccount oAuthAccountData = new OAuthAccountDto()
                     {
                         Id = row.AccountId,
                         UserId = row.UserId,
@@ -176,12 +199,14 @@ namespace NekoKeepDB.Databases
                         Provider = row.Provider!,
                         Tags = TagsDB.RetriveTags(row.AccountId),
                         Note = row.Note,
+                        UpdatedAt = row.UpdatedAt
                     };
-                    oAuthAccounts.Add(oAuthAccount);
+                    OAuthAccount oAuthAccount = new(oAuthAccountData);
+                    accounts.Add(oAuthAccount);
                 }
                 else if (row.Type == "Custom")
                 {
-                    ICustomAccount customAccount = new CustomAccountDto()
+                    ICustomAccount customAccountData = new CustomAccountDto()
                     {
                         Id = row.AccountId,
                         UserId = row.UserId,
@@ -190,12 +215,14 @@ namespace NekoKeepDB.Databases
                         Password = Crypto.Decrypt(row.EncryptedPassword!)!,
                         Tags = TagsDB.RetriveTags(row.AccountId),
                         Note = row.Note,
+                        UpdatedAt = row.UpdatedAt
                     };
-                    customAccounts.Add(customAccount);
+                    CustomAccount customAccount = new(customAccountData);
+                    accounts.Add(customAccount);
                 }
             }
 
-            return (oAuthAccounts, customAccounts);
+            return accounts;
         }
     }
 }

@@ -21,406 +21,517 @@ namespace NekoKeepDB
             List<string> tagMenu = ["Add Tag", "View Tags", "Update Tag", "Delete Tag"];
             List<string> backupMenu = ["Export", "Import"];
             string Menu(List<string> menuList, int num = 1) => string.Join("\n", menuList.Select(menuItem => $"[ {menuList.IndexOf(menuItem) + num} ] - {menuItem}"));
-            
+
             while (true)
             {
-                WriteLine();
-                Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU (SOON) ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
-
-                if (int.TryParse(ReadLine(), out int selected))
+                try
                 {
-                    Clear();
-                    switch (selected)
+                    WriteLine();
+                    Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU (SOON) ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
+
+                    if (int.TryParse(ReadLine(), out int selected))
                     {
-                        case -1:
-                            {
-                                WriteLine("Master Key: " + Crypto.GenerateMasterKeyBase64());
-                                return;
-                            }
-                        case 0:
-                            {
-                                MainDB.Disconnect();
-                                return;
-                            }
-                        case 1:
-                            {
-                                // ================================== Test User Creation ==================================
-                                WriteLine("=== TEST USER CREATION ===");
-                                Write("Enter User Display Name: ");
-                                string displayName = ReadLine()!;
-
-                                Write("Enter User Email: ");
-                                string email = ReadLine()!;
-                                if (!Utils.ValidateEmail(email)) break;
-
-                                Write("Enter User Password: ");
-                                string password = ReadLine()!;
-                                if (!Utils.ValidatePassword(password)) break;
-                                string encryptedPassword = Utils.BCryptEncrypt(password);
-
-                                Write("Enter User MPIN: ");
-                                string mpin = ReadLine()!;
-                                if (!Utils.ValidateMpin(mpin)) break;
-                                string encryptedMpin = Utils.BCryptEncrypt(mpin);
-
-                                Write("Enter Cat Theme Preset ID: ");
-                                int catThemePresetId = int.Parse(ReadLine()!);
-
-                                IUser user = new UserDto() 
+                        Clear();
+                        switch (selected)
+                        {
+                            case -1:
                                 {
-                                    DisplayName = displayName,
-                                    Email = email,
-                                    CatPresetId = catThemePresetId,
-                                };
-                                UsersDB.CreateUser(user, encryptedPassword, encryptedMpin);
-                                WriteLine($"User \"{displayName}\" Successfully Created!");
-                                break;
-                                // ================================== Test User Creation ==================================
-                            }
-                        case 2:
-                            {
-                                // =================================== Test User Login ===================================
-                                WriteLine("=== TEST USER LOGIN ===");
-                                Write("Enter User Email: ");
-                                string email = ReadLine()!;
-                                Write("Enter User Password: ");
-                                string password = ReadLine()!;
-
-                                int user = UsersDB.AuthenticateUser(email, password);
-                                if (User.Session == null) break;
-                                else if (!Utils.ValidateEmail(email)) break;
-                                else if (!Utils.ValidatePassword(password)) break;
-                                else if (user > 0)
-                                {
-                                    WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
-
-                                    Write("\n\nTest MPIN? (y, n): ");
-                                    if (string.Equals(ReadLine()!.ToLower(), "y"))
-                                    {
-                                        Write("Enter User MPIN: ");
-                                        string mpin = ReadLine()!;
-                                        bool mpinValid = User.VerifyMpin(mpin);
-                                        WriteLine(mpinValid ? "MPIN is correct!" : "MPIN is incorrect!");
-                                    }
+                                    WriteLine("Master Key: " + Crypto.GenerateMasterKeyBase64());
+                                    return;
                                 }
-                                else if (user == 0) WriteLine("Incorrect password.");
-                                else WriteLine("User not found.");
-                                break;
-                                // =================================== Test User Login ===================================
-                            }
-                        case 3:
-                            {
-                                // =================================== Test User Logout ===================================
-                                User.Logout();
-                                WriteLine("User Logout Successfully!");
-                                break;
-                                // =================================== Test User Logout ===================================
-                            }
-                        case 4:
-                            {
-                                // ================================= Test Change Password =================================
-                                WriteLine("=== TEST CHANGE PASSWORD ===");
-                                Write("Enter Old Password: ");
-                                string oldPassword = ReadLine()!;
-                                Write("Enter New Password: ");
-                                string newPassword = ReadLine()!;
-                                Write("Re-Enter New Password: ");
-                                string newPassword2 = ReadLine()!;
-
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else if (!User.VerifyPassword(oldPassword)) WriteLine("Wrong old password!");
-                                else if (!newPassword.Equals(newPassword2)) WriteLine("New password do not match!");
-                                else if (User.VerifyPassword(newPassword)) WriteLine("Your new password must be different from the old password.");
-                                else if (!Utils.ValidatePassword(newPassword)) break;
-                                else
+                            case 0:
                                 {
-                                    UsersDB.UpdateUserPassword(User.Session.Id, newPassword);
-                                    WriteLine("Password changed successfully!");
+                                    MainDB.Disconnect();
+                                    return;
                                 }
-                                break;
-                                // ================================= Test Change Password =================================
-                            }
-                        case 5:
-                            {
-                                // =================================== Test Change MPIN ===================================
-                                WriteLine("=== TEST CHANGE MPIN ===");
-                                Write("Enter Old MPIN: ");
-                                string oldMpin = ReadLine()!;
-                                Write("Enter New MPIN: ");
-                                string newMpin = ReadLine()!;
-                                Write("Re-Enter New MPIN: ");
-                                string newMpin2 = ReadLine()!;
-
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else if (!User.VerifyMpin(oldMpin)) WriteLine("Wrong old MPIN!");
-                                else if (!newMpin.Equals(newMpin2)) WriteLine("New MPIN do not match!");
-                                else if (User.VerifyMpin(newMpin)) WriteLine("Your new MPIN must be different from the old MPIN.");
-                                else if (!Utils.ValidateMpin(newMpin)) break;
-                                else
+                            case 1:
                                 {
-                                    UsersDB.UpdateUserMpin(User.Session.Id, newMpin);
-                                    WriteLine("MPIN changed successfully!");
-                                }
-                                break;
-                                // =================================== Test Change MPIN ===================================
-                            }
-                        case 6:
-                            {
-                                // =================================== Test Change Email ===================================
-                                WriteLine("=== TEST CHANGE EMAIL ===");
-                                Write("Enter Old Email: ");
-                                string oldEmail = ReadLine()!;
-                                Write("Enter New Email: ");
-                                string newEmail = ReadLine()!;
-                                Write("Re-Enter New Email: ");
-                                string newEmail2 = ReadLine()!;
+                                    // ================================== Test User Creation ==================================
+                                    WriteLine("=== TEST USER CREATION ===");
+                                    Write("Enter User Display Name: ");
+                                    string displayName = ReadLine()!;
 
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else if (!User.Session.Email.Equals(oldEmail)) WriteLine("Wrong old Email!");
-                                else if (!newEmail.Equals(newEmail2)) WriteLine("New Email do not match!");
-                                else if (User.Session.Email.Equals(newEmail)) WriteLine("Your new Email must be different from the old Email.");
-                                else if (!Utils.ValidateEmail(newEmail)) break;
-                                else
-                                {
-                                    UsersDB.UpdateUserEmail(User.Session.Id, newEmail);
-                                    WriteLine("Email changed successfully!");
-                                }
-                                break;
-                                // =================================== Test Change Email ===================================
-                            }
-                        case 7:
-                            {
-                                // ================================ Test Change Display Name ================================
-                                WriteLine("=== TEST CHANGE DISPLAY NAME ===");
-                                Write("Enter New Display Name: ");
-                                string newDisplayName = ReadLine()!;
+                                    Write("Enter User Email: ");
+                                    string email = ReadLine()!;
+                                    if (!Utils.ValidateEmail(email)) break;
 
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else if (User.Session.DisplayName.Equals(newDisplayName)) WriteLine("Your new Display Name must be different from the old Display Name.");
-                                else
-                                {
-                                    UsersDB.UpdateUserDisplayName(User.Session.Id, newDisplayName);
-                                    WriteLine("Display Name changed successfully!");
-                                }
-                                break;
-                                // ================================ Test Change Display Name ================================
-                            }
-                        case 8:
-                            {
-                                // ================================ Test Change Cat Preset Id ================================
-                                WriteLine("=== TEST CHANGE CAT PRESET ID ===");
-                                Write("Enter New Cat Preset Id: ");
-                                int newCatPresetId = int.Parse(ReadLine()!);
-
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else if (User.Session.CatPresetId == newCatPresetId) WriteLine("Your new Cat Preset Id must be different from the old Cat Preset Id.");
-                                else
-                                {
-                                    UsersDB.UpdateUserCatPresetId(User.Session.Id, newCatPresetId);
-                                    WriteLine("Cat Preset Id changed successfully!");
-                                }
-                                break;
-                                // ================================ Test Change Cat Preset Id ================================
-                            }
-                        case 9:
-                            {
-                                // ================================ Test View User ================================
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
-                                break;
-                                // ================================ Test View User ================================
-                            }
-                        case 10:
-                            {
-                                // ================================ Test User Deletion ================================
-                                WriteLine("=== TEST CHANGE USER DELETE ===");
-
-                                if (User.Session == null) WriteLine("User is not authenticated.");
-                                else
-                                {
-                                    Write("Are you sure you want to delete this account? (y, n): ");
-                                    string ans = ReadLine()!;
-
-                                    if (ans.Equals("y"))
-                                    {
-                                        UsersDB.DeleteUser(User.Session.Id);
-                                        WriteLine("User deleted successfully!");
-                                    }
-                                }
-                                break;
-                                // ================================ Test User Deletion ================================
-                            }
-                        case 11:
-                            {
-                                // ================================== Test Account Creation ==================================
-                                WriteLine("=== TEST ACCOUNT CREATION ===");
-                                if (!Utils.IsAuthenticated()) break;
-
-                                Write("Enter Account Display Name: ");
-                                string displayName = ReadLine()!;
-
-                                Write("Enter Account Note (Optional): ");
-                                string? note = ReadLine();
-                                note = string.IsNullOrWhiteSpace(note) ? null : note;
-                                
-                                Write("Enter Account Tag IDs (comma-separated): ");
-                                List<ITag> tags = ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) })).ToList();
-
-                                Write("Enter Account Email: ");
-                                string email = ReadLine()!;
-                                if (!Utils.ValidateEmail(email)) break;
-                                
-                                Write("Enter Account Type: ");
-                                string type = ReadLine()!;
-                                if (!Utils.ValidateType(type))
-                                {
-                                    WriteLine("Invalid Type!");
-                                    break;
-                                }
-
-                                if (type.Equals("OAuth"))
-                                {
-                                    Write("Enter Account Provider: ");
-                                    string provider = ReadLine()!;
-                                    IOAuthAccount oAuthAccount = new OAuthAccountDto()
-                                    {
-                                        UserId = User.Session!.Id,
-                                        Email = email,
-                                        DisplayName = displayName,
-                                        Provider = provider,
-                                        Tags = tags,
-                                        Note = note,
-                                    };
-                                    AccountsDB.CreateAccount(oAuthAccount);
-                                }
-                                else
-                                {
                                     Write("Enter User Password: ");
                                     string password = ReadLine()!;
-                                    ICustomAccount customAccount = new CustomAccountDto()
+                                    if (!Utils.ValidatePassword(password)) break;
+                                    string encryptedPassword = Utils.BCryptEncrypt(password);
+
+                                    Write("Enter User MPIN: ");
+                                    string mpin = ReadLine()!;
+                                    if (!Utils.ValidateMpin(mpin)) break;
+                                    string encryptedMpin = Utils.BCryptEncrypt(mpin);
+
+                                    Write("Enter Cat Theme Preset ID: ");
+                                    int catThemePresetId = int.Parse(ReadLine()!);
+
+                                    IUser user = new UserDto()
                                     {
-                                        UserId = User.Session!.Id,
-                                        Email = email,
                                         DisplayName = displayName,
-                                        Password = password,
-                                        Tags = tags,
-                                        Note = note,
+                                        Email = email,
+                                        CatPresetId = catThemePresetId,
                                     };
-                                    AccountsDB.CreateAccount(customAccount);
+                                    UsersDB.CreateUser(user, encryptedPassword, encryptedMpin);
+                                    WriteLine($"User \"{displayName}\" Successfully Created!");
+                                    break;
+                                    // ================================== Test User Creation ==================================
                                 }
-
-                                WriteLine($"Account \"{displayName}\" Successfully Created!");
-                                break;
-                                // ================================== Test Account Creation ==================================
-                            }
-                        case 12:
-                            {
-                                // ================================== Test Account Retrieval ==================================
-                                WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
-                                if (!Utils.IsAuthenticated()) break;
-
-                                var accounts = AccountsDB.RetrieveAccounts();
-
-                                WriteLine("\n=== OAUTH ACCOUNTS ===");
-                                foreach (IOAuthAccount account in accounts.Item1)
+                            case 2:
                                 {
-                                    WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Note: {account.Note}");
+                                    // =================================== Test User Login ===================================
+                                    WriteLine("=== TEST USER LOGIN ===");
+                                    Write("Enter User Email: ");
+                                    string email = ReadLine()!;
+                                    Write("Enter User Password: ");
+                                    string password = ReadLine()!;
+
+                                    int user = UsersDB.AuthenticateUser(email, password);
+                                    if (User.Session == null) break;
+                                    else if (!Utils.ValidateEmail(email)) break;
+                                    else if (!Utils.ValidatePassword(password)) break;
+                                    else if (user > 0)
+                                    {
+                                        WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
+
+                                        Write("\n\nTest MPIN? (y, n): ");
+                                        if (string.Equals(ReadLine()!.ToLower(), "y"))
+                                        {
+                                            Write("Enter User MPIN: ");
+                                            string mpin = ReadLine()!;
+                                            bool mpinValid = User.VerifyMpin(mpin);
+                                            WriteLine(mpinValid ? "MPIN is correct!" : "MPIN is incorrect!");
+                                        }
+                                    }
+                                    else if (user == 0) WriteLine("Incorrect password.");
+                                    else WriteLine("User not found.");
+                                    break;
+                                    // =================================== Test User Login ===================================
                                 }
-                                
-                                WriteLine("\n=== CUSTOM ACCOUNTS ===");
-                                foreach (ICustomAccount account in accounts.Item2)
+                            case 3:
                                 {
-                                    WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Password: {account.Password} - Note: {account.Note}");
+                                    // =================================== Test User Logout ===================================
+                                    User.Logout();
+                                    WriteLine("User Logout Successfully!");
+                                    break;
+                                    // =================================== Test User Logout ===================================
                                 }
-
-                                break;
-                                // ================================== Test Account Retrieval ==================================
-                            }
-                        case 19:
-                            {
-                                // ================================== Test Tag Creation ==================================
-                                WriteLine("=== TEST TAG CREATION ===");
-                                if (!Utils.IsAuthenticated()) break;
-
-                                Write("Enter Tag Display Name: ");
-                                string displayName = ReadLine()!;
-
-                                TagsDB.CreateTag(displayName);
-
-                                WriteLine($"Tag \"{displayName}\" Successfully Created!");
-                                break;
-                                // ================================== Test Tag Creation ==================================
-                            }
-                        case 20:
-                            {
-                                // ================================== Test Tag Retrieval ==================================
-                                WriteLine("=== TEST TAG RETRIEVAL ===");
-                                if (!Utils.IsAuthenticated()) break;
-                                List<ITag> tags = TagsDB.RetrieveTags();
-
-                                foreach (ITag tag in tags) WriteLine($"[ {tag.Id} ] - {tag.DisplayName}");
-
-                                break;
-                                // ================================== Test Tag Retrieval ==================================
-                            }
-                        case 21:
-                            {
-                                // ================================== Test Modify Tag ==================================
-                                WriteLine("=== TEST TAG MODIFICATION ===");
-                                if (!Utils.IsAuthenticated()) break;
-
-                                Write("Enter Tag ID: ");
-                                int tagId = int.Parse(ReadLine()!);
-                                Write("Enter New Tag Display Name: ");
-                                string displayName = ReadLine()!;
-
-                                if (TagsDB.RetrieveTag(tagId) == null)
+                            case 4:
                                 {
-                                    WriteLine("Invalid Tag ID!");
+                                    // ================================= Test Change Password =================================
+                                    WriteLine("=== TEST CHANGE PASSWORD ===");
+                                    Write("Enter Old Password: ");
+                                    string oldPassword = ReadLine()!;
+                                    Write("Enter New Password: ");
+                                    string newPassword = ReadLine()!;
+                                    Write("Re-Enter New Password: ");
+                                    string newPassword2 = ReadLine()!;
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else if (!User.VerifyPassword(oldPassword)) WriteLine("Wrong old password!");
+                                    else if (!newPassword.Equals(newPassword2)) WriteLine("New password do not match!");
+                                    else if (User.VerifyPassword(newPassword)) WriteLine("Your new password must be different from the old password.");
+                                    else if (!Utils.ValidatePassword(newPassword)) break;
+                                    else
+                                    {
+                                        UsersDB.UpdateUserPassword(User.Session.Id, newPassword);
+                                        WriteLine("Password changed successfully!");
+                                    }
+                                    break;
+                                    // ================================= Test Change Password =================================
+                                }
+                            case 5:
+                                {
+                                    // =================================== Test Change MPIN ===================================
+                                    WriteLine("=== TEST CHANGE MPIN ===");
+                                    Write("Enter Old MPIN: ");
+                                    string oldMpin = ReadLine()!;
+                                    Write("Enter New MPIN: ");
+                                    string newMpin = ReadLine()!;
+                                    Write("Re-Enter New MPIN: ");
+                                    string newMpin2 = ReadLine()!;
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else if (!User.VerifyMpin(oldMpin)) WriteLine("Wrong old MPIN!");
+                                    else if (!newMpin.Equals(newMpin2)) WriteLine("New MPIN do not match!");
+                                    else if (User.VerifyMpin(newMpin)) WriteLine("Your new MPIN must be different from the old MPIN.");
+                                    else if (!Utils.ValidateMpin(newMpin)) break;
+                                    else
+                                    {
+                                        UsersDB.UpdateUserMpin(User.Session.Id, newMpin);
+                                        WriteLine("MPIN changed successfully!");
+                                    }
+                                    break;
+                                    // =================================== Test Change MPIN ===================================
+                                }
+                            case 6:
+                                {
+                                    // =================================== Test Change Email ===================================
+                                    WriteLine("=== TEST CHANGE EMAIL ===");
+                                    Write("Enter Old Email: ");
+                                    string oldEmail = ReadLine()!;
+                                    Write("Enter New Email: ");
+                                    string newEmail = ReadLine()!;
+                                    Write("Re-Enter New Email: ");
+                                    string newEmail2 = ReadLine()!;
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else if (!User.Session.Email.Equals(oldEmail)) WriteLine("Wrong old Email!");
+                                    else if (!newEmail.Equals(newEmail2)) WriteLine("New Email do not match!");
+                                    else if (User.Session.Email.Equals(newEmail)) WriteLine("Your new Email must be different from the old Email.");
+                                    else if (!Utils.ValidateEmail(newEmail)) break;
+                                    else
+                                    {
+                                        UsersDB.UpdateUserEmail(User.Session.Id, newEmail);
+                                        WriteLine("Email changed successfully!");
+                                    }
+                                    break;
+                                    // =================================== Test Change Email ===================================
+                                }
+                            case 7:
+                                {
+                                    // ================================ Test Change Display Name ================================
+                                    WriteLine("=== TEST CHANGE DISPLAY NAME ===");
+                                    Write("Enter New Display Name: ");
+                                    string newDisplayName = ReadLine()!;
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else if (User.Session.DisplayName.Equals(newDisplayName)) WriteLine("Your new Display Name must be different from the old Display Name.");
+                                    else
+                                    {
+                                        UsersDB.UpdateUserDisplayName(User.Session.Id, newDisplayName);
+                                        WriteLine("Display Name changed successfully!");
+                                    }
+                                    break;
+                                    // ================================ Test Change Display Name ================================
+                                }
+                            case 8:
+                                {
+                                    // ================================ Test Change Cat Preset Id ================================
+                                    WriteLine("=== TEST CHANGE CAT PRESET ID ===");
+                                    Write("Enter New Cat Preset Id: ");
+                                    int newCatPresetId = int.Parse(ReadLine()!);
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else if (User.Session.CatPresetId == newCatPresetId) WriteLine("Your new Cat Preset Id must be different from the old Cat Preset Id.");
+                                    else
+                                    {
+                                        UsersDB.UpdateUserCatPresetId(User.Session.Id, newCatPresetId);
+                                        WriteLine("Cat Preset Id changed successfully!");
+                                    }
+                                    break;
+                                    // ================================ Test Change Cat Preset Id ================================
+                                }
+                            case 9:
+                                {
+                                    // ================================ Test View User ================================
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
+                                    break;
+                                    // ================================ Test View User ================================
+                                }
+                            case 10:
+                                {
+                                    // ================================ Test User Deletion ================================
+                                    WriteLine("=== TEST CHANGE USER DELETE ===");
+
+                                    if (User.Session == null) WriteLine("User is not authenticated.");
+                                    else
+                                    {
+                                        Write("Are you sure you want to delete this account? (y, n): ");
+                                        string ans = ReadLine()!;
+
+                                        if (ans.Equals("y"))
+                                        {
+                                            UsersDB.DeleteUser(User.Session.Id);
+                                            WriteLine("User deleted successfully!");
+                                        }
+                                    }
+                                    break;
+                                    // ================================ Test User Deletion ================================
+                                }
+                            case 11:
+                                {
+                                    // ================================== Test Account Creation ==================================
+                                    WriteLine("=== TEST ACCOUNT CREATION ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter Account Display Name: ");
+                                    string displayName = ReadLine()!;
+
+                                    Write("Enter Account Note (Optional): ");
+                                    string? note = ReadLine();
+                                    note = string.IsNullOrWhiteSpace(note) ? null : note;
+
+                                    Write("Enter Account Tag IDs (comma-separated): ");
+                                    List<ITag> tags = ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) })).ToList();
+
+                                    Write("Enter Account Email: ");
+                                    string email = ReadLine()!;
+                                    if (!Utils.ValidateEmail(email)) break;
+
+                                    Write("Enter Account Type: ");
+                                    string type = ReadLine()!;
+                                    if (!Utils.ValidateType(type)) break;
+
+                                    if (type.Equals("OAuth"))
+                                    {
+                                        Write("Enter Account Provider: ");
+                                        string provider = ReadLine()!;
+                                        IOAuthAccount oAuthAccount = new OAuthAccountDto()
+                                        {
+                                            UserId = User.Session!.Id,
+                                            Email = email,
+                                            DisplayName = displayName,
+                                            Provider = provider,
+                                            Tags = tags,
+                                            Note = note,
+                                        };
+                                        AccountsDB.CreateAccount(oAuthAccount);
+                                    }
+                                    else
+                                    {
+                                        Write("Enter User Password: ");
+                                        string password = ReadLine()!;
+                                        ICustomAccount customAccount = new CustomAccountDto()
+                                        {
+                                            UserId = User.Session!.Id,
+                                            Email = email,
+                                            DisplayName = displayName,
+                                            Password = password,
+                                            Tags = tags,
+                                            Note = note,
+                                        };
+                                        AccountsDB.CreateAccount(customAccount);
+                                    }
+
+                                    WriteLine($"Account \"{displayName}\" Successfully Created!");
+                                    break;
+                                    // ================================== Test Account Creation ==================================
+                                }
+                            case 12:
+                                {
+                                    // ================================== Test Account Retrieval ==================================
+                                    WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
+                                    WriteLine("> By Last Updated (Ascending)");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    var accounts = User.ViewAccounts(true, false);
+
+                                    WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                    foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
+                                    {
+                                        IOAuthAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                    foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
+                                    {
+                                        ICustomAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    break;
+                                    // ================================== Test Account Retrieval ==================================
+                                }
+                            case 13:
+                                {
+                                    // ================================== Test Account Retrieval ==================================
+                                    WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
+                                    WriteLine("> By Last Updated (Descending)");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    var accounts = User.ViewAccounts(true, true);
+
+                                    WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                    foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
+                                    {
+                                        IOAuthAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                    foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
+                                    {
+                                        ICustomAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    break;
+                                    // ================================== Test Account Retrieval ==================================
+                                }
+                            case 14:
+                                {
+                                    // ================================== Test Account Retrieval ==================================
+                                    WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
+                                    WriteLine("> By Display Name (Ascending)");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    var accounts = User.ViewAccounts(false, false);
+
+                                    WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                    foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
+                                    {
+                                        IOAuthAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                    foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
+                                    {
+                                        ICustomAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    break;
+                                    // ================================== Test Account Retrieval ==================================
+                                }
+                            case 15:
+                                {
+                                    // ================================== Test Account Retrieval ==================================
+                                    WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
+                                    WriteLine("> By Display Name (Descending)");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    var accounts = User.ViewAccounts(false, true);
+
+                                    WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                    foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
+                                    {
+                                        IOAuthAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                    foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
+                                    {
+                                        ICustomAccount account = accountData.ViewAccount();
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
+                                    }
+
+                                    break;
+                                    // ================================== Test Account Retrieval ==================================
+                                }
+                            case 16:
+                                {
+                                    // ================================== Test Account Password Retrieval ==================================
+                                    WriteLine("=== TEST ACCOUNT PASSWORD RETRIEVAL ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    List<Account> accounts = User.Session!.Accounts!;
+
+                                    Write("Enter account id: ");
+                                    int id = int.Parse(ReadLine()!);
+
+                                    Account? accountData = accounts.FirstOrDefault(a => a.ViewAccount().Id == id);
+                                    if (accountData == null) WriteLine("No account found with the said id.");
+                                    else if (accountData.GetType() != typeof(CustomAccount)) WriteLine("Account is not a custom account!");
+                                    else
+                                    {
+                                        CustomAccount customAccount = (CustomAccount)accountData;
+                                        Write("Enter MPIN: ");
+                                        string mpin = ReadLine()!;
+                                        string password = customAccount.ViewPassword(mpin);
+
+                                        if (!string.IsNullOrWhiteSpace(password)) WriteLine("Password: " + password);
+                                    }
+
+                                    break;
+                                    // ================================== Test Account Password Retrieval ==================================
+                                }
+                            case 19:
+                                {
+                                    // ================================== Test Tag Creation ==================================
+                                    WriteLine("=== TEST TAG CREATION ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter Tag Display Name: ");
+                                    string displayName = ReadLine()!;
+
+                                    TagsDB.CreateTag(displayName);
+
+                                    WriteLine($"Tag \"{displayName}\" Successfully Created!");
+                                    break;
+                                    // ================================== Test Tag Creation ==================================
+                                }
+                            case 20:
+                                {
+                                    // ================================== Test Tag Retrieval ==================================
+                                    WriteLine("=== TEST TAG RETRIEVAL ===");
+                                    if (!Utils.IsAuthenticated()) break;
+                                    List<ITag> tags = TagsDB.RetrieveTags();
+
+                                    foreach (ITag tag in tags) WriteLine($"[ {tag.Id} ] - {tag.DisplayName}");
+
+                                    break;
+                                    // ================================== Test Tag Retrieval ==================================
+                                }
+                            case 21:
+                                {
+                                    // ================================== Test Modify Tag ==================================
+                                    WriteLine("=== TEST TAG MODIFICATION ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter Tag ID: ");
+                                    int tagId = int.Parse(ReadLine()!);
+                                    Write("Enter New Tag Display Name: ");
+                                    string displayName = ReadLine()!;
+
+                                    if (TagsDB.RetrieveTag(tagId) == null)
+                                    {
+                                        WriteLine("Invalid Tag ID!");
+                                        break;
+                                    }
+
+                                    ITag tag = new TagDto()
+                                    {
+                                        Id = tagId,
+                                        DisplayName = displayName,
+                                    };
+                                    TagsDB.UpdateTag(tag);
+
+                                    WriteLine($"Tag \"{displayName}\" Successfully Edited!");
+                                    break;
+                                    // ================================== Test Modify Tag ==================================
+                                }
+                            case 22:
+                                {
+                                    // ================================== Test Tag Deletion ==================================
+                                    WriteLine("=== TEST TAG DELETION ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter Tag ID: ");
+                                    int tagId = int.Parse(ReadLine()!);
+                                    if (TagsDB.RetrieveTag(tagId) == null)
+                                    {
+                                        WriteLine("Invalid Tag ID!");
+                                        break;
+                                    }
+
+                                    TagsDB.DeleteTag(tagId);
+                                    WriteLine("Tag Successfully Deleted!");
+                                    break;
+                                    // ================================== Test Tag Deletion ==================================
+                                }
+                            default:
+                                {
+                                    WriteLine("Invalid/Unavailable Selection!");
                                     break;
                                 }
-
-                                ITag tag = new TagDto()
-                                {
-                                    Id = tagId,
-                                    DisplayName = displayName,
-                                };
-                                TagsDB.UpdateTag(tag);
-
-                                WriteLine($"Tag \"{displayName}\" Successfully Edited!");
-                                break;
-                                // ================================== Test Modify Tag ==================================
-                            }
-                        case 22:
-                            {
-                                // ================================== Test Tag Deletion ==================================
-                                WriteLine("=== TEST TAG DELETION ===");
-                                if (!Utils.IsAuthenticated()) break;
-
-                                Write("Enter Tag ID: ");
-                                int tagId = int.Parse(ReadLine()!);
-                                if (TagsDB.RetrieveTag(tagId) == null)
-                                {
-                                    WriteLine("Invalid Tag ID!");
-                                    break;
-                                }
-
-                                TagsDB.DeleteTag(tagId);
-                                WriteLine("Tag Successfully Deleted!");
-                                break;
-                                // ================================== Test Tag Deletion ==================================
-                            }
-                        default:
-                            {
-                                WriteLine("Invalid/Unavailable Selection!");
-                                break;
-                            }
+                        }
                     }
-                }
-                else WriteLine("Invalid Selection!");
+                    else WriteLine("Invalid Selection!");
 
-                ReadKey(true);
-                Clear();
+                    ReadKey(true);
+                    Clear();
+                }
+                catch (Exception ex)
+                {
+                    WriteLine("Invalid Action: " + ex.Message);
+                }
             }
         }
     }
