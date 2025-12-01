@@ -48,7 +48,7 @@ namespace NekoKeepDB.Databases
             if (reader.Read())
             {
                 ITag tag = new TagDto()
-                { 
+                {
                     DisplayName = reader.GetString("display_name"),
                     Id = tagId
                 };

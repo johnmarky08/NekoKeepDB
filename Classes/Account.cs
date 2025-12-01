@@ -6,22 +6,28 @@ namespace NekoKeepDB.Classes
     {
         protected readonly int id = account.Id;
         protected readonly int userId = account.UserId;
-        protected readonly string displayName = account.DisplayName;
-        protected readonly string email = account.Email;
-        protected readonly string? note = account.Note;
-        protected readonly List<ITag> tags = account.Tags;
-        protected readonly DateTime? updatedAt = account.UpdatedAt;
+        protected string displayName = account.DisplayName;
+        protected string email = account.Email;
+        protected string? note = account.Note;
+        protected List<ITag> tags = account.Tags;
+        protected DateTime? updatedAt = account.UpdatedAt;
 
-        public abstract IAccount ViewAccount();
-        public abstract void UpdateAccount(IAccount account);
-
+        public abstract IAccount Data { get; }
+        protected void UpdateAccount(IAccount updatedAccount)
+        {
+            displayName = updatedAccount.DisplayName;
+            email = updatedAccount.Email;
+            note = updatedAccount.Note;
+            tags = updatedAccount.Tags;
+            updatedAt = updatedAccount.UpdatedAt;
+        }
     }
 
     public class OAuthAccount(IOAuthAccount oAuthAccount) : Account(oAuthAccount)
     {
-        private readonly string provider = oAuthAccount.Provider;
+        private string provider = oAuthAccount.Provider;
 
-        public override IOAuthAccount ViewAccount() => new OAuthAccountDto
+        public override IOAuthAccount Data => new OAuthAccountDto
         {
             Id = id,
             UserId = userId,
@@ -33,25 +39,17 @@ namespace NekoKeepDB.Classes
             UpdatedAt = updatedAt
         };
 
-        public override void UpdateAccount(IOAuthAccount account)
+        public void UpdateAccount(IOAuthAccount updatedOAuthAccount)
         {
-            IOAuthAccount updatedAccount = new OAuthAccountDto
-            {
-                Id = id,
-                UserId = userId,
-                DisplayName = account.DisplayName,
-                Email = account.Email,
-                Provider = account.Provider,
-                Note = account.Note,
-                Tags = account.Tags,
-            };
+            base.UpdateAccount(updatedOAuthAccount);
+            provider = updatedOAuthAccount.Provider;
         }
     }
 
     public class CustomAccount(ICustomAccount customAccount) : Account(customAccount)
     {
-        private readonly string password = customAccount.Password!;
-        public override ICustomAccount ViewAccount() => new CustomAccountDto
+        private string password = customAccount.Password!;
+        public override ICustomAccount Data => new CustomAccountDto
         {
             Id = id,
             UserId = userId,
@@ -61,6 +59,12 @@ namespace NekoKeepDB.Classes
             Tags = tags,
             UpdatedAt = updatedAt
         };
+
+        public void UpdateAccount(ICustomAccount updatedCustomAccount)
+        {
+            base.UpdateAccount(updatedCustomAccount);
+            password = updatedCustomAccount.Password!;
+        }
 
         public string ViewPassword(string mpin)
         {

@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using NekoKeepDB.Classes;
 using NekoKeepDB.Interfaces;
+using System.Data;
 
 namespace NekoKeepDB.Databases
 {
@@ -225,6 +226,29 @@ namespace NekoKeepDB.Databases
             return accounts;
         }
 
+        // Create or Delete Filters for an Account
+        public static void UpdateAccountFilters(int accountId, List<ITag> oldTagsList, List<ITag> newTagsList)
+        {
+            var oldTags = oldTagsList.Select(t => t.Id).ToList();
+            var newTags = newTagsList.Select(t => t.Id).ToList();
+
+            var tagsToAdd = newTags.Where(id => !oldTags.Contains(id)).ToList();
+            var tagsToRemove = oldTags.Where(id => !newTags.Contains(id)).ToList();
+
+            foreach (var tagId in tagsToAdd)
+            {
+                var filter = new FilterDto { AccountId = accountId, TagId = tagId };
+                FiltersDB.CreateFilter(filter);
+            }
+
+            foreach (var tagId in tagsToRemove)
+            {
+                var filter = new FilterDto { AccountId = accountId, TagId = tagId };
+                FiltersDB.DeleteFilter(filter);
+            }
+        }
+
+
         // Update an OAuth Account
         public static void UpdateAccount(IOAuthAccount oAuthAccount)
         {
@@ -244,6 +268,10 @@ namespace NekoKeepDB.Databases
             cmd.Parameters.AddWithValue("@note", oAuthAccount.Note);
             cmd.Parameters.AddWithValue("@account_id", oAuthAccount.Id);
             cmd.ExecuteNonQuery();
+
+            OAuthAccount account = (OAuthAccount)User.Session!.Accounts!.FirstOrDefault(a => a.Data.Id == oAuthAccount.Id)!;
+            UpdateAccountFilters(oAuthAccount.Id, [.. account.Data.Tags], [.. oAuthAccount.Tags]);
+            account.UpdateAccount(oAuthAccount);
         }
 
         // Update a Custom Account
@@ -267,6 +295,10 @@ namespace NekoKeepDB.Databases
             cmd.Parameters.AddWithValue("@note", customAccount.Note);
             cmd.Parameters.AddWithValue("@account_id", customAccount.Id);
             cmd.ExecuteNonQuery();
+
+            CustomAccount account = (CustomAccount)User.Session!.Accounts!.FirstOrDefault(a => a.Data.Id == customAccount.Id)!;
+            UpdateAccountFilters(customAccount.Id, [.. account.Data.Tags], [.. customAccount.Tags]);
+            account.UpdateAccount(customAccount);
         }
     }
 }

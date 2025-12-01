@@ -4,24 +4,16 @@ namespace NekoKeepDB.Databases
 {
     public class MainDB
     {
-        protected static MySqlConnection? connection;
+        protected readonly static MySqlConnection connection = new(Environment.GetEnvironmentVariable("CONNECTION_STRING"));
 
         // Connect to MySql with connection string
-        public static void Connect()
-        {
-            connection = new MySqlConnection(Environment.GetEnvironmentVariable("CONNECTION_STRING"));
-            connection.Open();
-        }
+        public static void Connect() => connection.Open();
 
         // Dispose and disconnect current MySql connection
         public static void Disconnect()
         {
-            if (connection != null)
-            {
-                connection.Close();
-                connection.Dispose();
-                connection = null;
-            }
+            connection.Close();
+            connection.Dispose();
         }
 
         // Delete all tables (For development)

@@ -17,7 +17,7 @@ namespace NekoKeepDB
             WriteLine("Tables Successfully Created!");
 
             List<string> userMenu = ["Register", "Login", "Logout", "Change Password", "Change MPIN", "Change Email", "Change Display Name", "Change Cat Theme", "View User Info", "Delete Account"];
-            List<string> accMenu = ["Add Account", "Search Accounts (Last Updated - Ascending)", "Search Accounts (Last Updated - Descending)", "Search Accounts (Name - Ascending)", "Search Accounts (Name - Descending)", "View Password", "Update Account", "Delete Account"];
+            List<string> accMenu = ["Add Account", "Search Accounts (Last Updated - Ascending)", "Search Accounts (Last Updated - Descending)", "Search Accounts (Name - Ascending)", "Search Accounts (Name - Descending)", "View Password", "Update Account", "Delete Account (Soon)"];
             List<string> tagMenu = ["Add Tag", "View Tags", "Update Tag", "Delete Tag"];
             List<string> backupMenu = ["Export", "Import"];
             string Menu(List<string> menuList, int num = 1) => string.Join("\n", menuList.Select(menuItem => $"[ {menuList.IndexOf(menuItem) + num} ] - {menuItem}"));
@@ -27,7 +27,7 @@ namespace NekoKeepDB
                 try
                 {
                     WriteLine();
-                    Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU (SOON) ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
+                    Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
 
                     if (int.TryParse(ReadLine(), out int selected))
                     {
@@ -89,10 +89,9 @@ namespace NekoKeepDB
                                     string password = ReadLine()!;
 
                                     int user = UsersDB.AuthenticateUser(email, password);
-                                    if (User.Session == null) break;
-                                    else if (!Utils.ValidateEmail(email)) break;
+                                    if (!Utils.ValidateEmail(email)) break;
                                     else if (!Utils.ValidatePassword(password)) break;
-                                    else if (user > 0)
+                                    else if (user > 0 && (User.Session != null))
                                     {
                                         WriteLine($"\n=== USER DEAILS ===\nID: {User.Session.Id}\nDisplay Name: {User.Session.DisplayName}\nEmail: {User.Session.Email}\nCat Preset Id: {User.Session.CatPresetId}");
 
@@ -266,7 +265,7 @@ namespace NekoKeepDB
                                     note = string.IsNullOrWhiteSpace(note) ? null : note;
 
                                     Write("Enter Account Tag IDs (comma-separated): ");
-                                    List<ITag> tags = ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) })).ToList();
+                                    List<ITag> tags = [.. ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))];
 
                                     Write("Enter Account Email: ");
                                     string email = ReadLine()!;
@@ -323,14 +322,14 @@ namespace NekoKeepDB
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
                                     {
-                                        IOAuthAccount account = accountData.ViewAccount();
+                                        IOAuthAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
                                     WriteLine("\n=== CUSTOM ACCOUNTS ===");
                                     foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
                                     {
-                                        ICustomAccount account = accountData.ViewAccount();
+                                        ICustomAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
@@ -349,14 +348,14 @@ namespace NekoKeepDB
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
                                     {
-                                        IOAuthAccount account = accountData.ViewAccount();
+                                        IOAuthAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
                                     WriteLine("\n=== CUSTOM ACCOUNTS ===");
                                     foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
                                     {
-                                        ICustomAccount account = accountData.ViewAccount();
+                                        ICustomAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
@@ -375,14 +374,14 @@ namespace NekoKeepDB
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
                                     {
-                                        IOAuthAccount account = accountData.ViewAccount();
+                                        IOAuthAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
                                     WriteLine("\n=== CUSTOM ACCOUNTS ===");
                                     foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
                                     {
-                                        ICustomAccount account = accountData.ViewAccount();
+                                        ICustomAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
@@ -401,14 +400,14 @@ namespace NekoKeepDB
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
                                     {
-                                        IOAuthAccount account = accountData.ViewAccount();
+                                        IOAuthAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
                                     WriteLine("\n=== CUSTOM ACCOUNTS ===");
                                     foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
                                     {
-                                        ICustomAccount account = accountData.ViewAccount();
+                                        ICustomAccount account = accountData.Data;
                                         WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {string.Join(", ", account.Tags.Select(tag => tag.DisplayName))} - Note: {account.Note}");
                                     }
 
@@ -426,7 +425,7 @@ namespace NekoKeepDB
                                     Write("Enter account id: ");
                                     int id = int.Parse(ReadLine()!);
 
-                                    Account? accountData = accounts.FirstOrDefault(a => a.ViewAccount().Id == id);
+                                    Account? accountData = accounts.FirstOrDefault(a => a.Data.Id == id);
                                     if (accountData == null) WriteLine("No account found with the said id.");
                                     else if (accountData.GetType() != typeof(CustomAccount)) WriteLine("Account is not a custom account!");
                                     else
@@ -441,6 +440,75 @@ namespace NekoKeepDB
 
                                     break;
                                     // ================================== Test Account Password Retrieval ==================================
+                                }
+                            case 17:
+                                {
+                                    // ================================== Test Account Update ==================================
+                                    WriteLine("=== TEST ACCOUNT UPDATE ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter Account ID: ");
+                                    int accountId = int.Parse(ReadLine()!);
+
+                                    Account? accountData = User.Session!.Accounts!.FirstOrDefault(a => a.Data.Id == accountId);
+                                    if (accountData == null)
+                                    {
+                                        WriteLine("Invalid Account ID!");
+                                        break;
+                                    }
+
+                                    string accountType = accountData.GetType() == typeof(OAuthAccount) ? "OAuth" : "Custom";
+
+                                    Write("Enter New Account Display Name: ");
+                                    string displayName = ReadLine()!;
+
+                                    Write("Enter New Account Note (Optional): ");
+                                    string? note = ReadLine();
+                                    note = string.IsNullOrWhiteSpace(note) ? null : note;
+
+                                    Write("Enter New Account Tag IDs (comma-separated): ");
+                                    List<ITag> tags = [.. ReadLine()!.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))];
+
+                                    Write("Enter New Account Email: ");
+                                    string email = ReadLine()!;
+                                    if (!Utils.ValidateEmail(email)) break;
+
+                                    if (accountType.Equals("OAuth"))
+                                    {
+                                        Write("Enter New Account Provider: ");
+                                        string provider = ReadLine()!;
+                                        IOAuthAccount oAuthAccount = new OAuthAccountDto()
+                                        {
+                                            Id = accountId,
+                                            UserId = User.Session!.Id,
+                                            Email = email,
+                                            DisplayName = displayName,
+                                            Provider = provider,
+                                            Tags = tags,
+                                            Note = note,
+                                        };
+                                        AccountsDB.UpdateAccount(oAuthAccount);
+                                    }
+                                    else
+                                    {
+                                        Write("Enter New User Password: ");
+                                        string password = ReadLine()!;
+                                        ICustomAccount customAccount = new CustomAccountDto()
+                                        {
+                                            Id = accountId,
+                                            UserId = User.Session!.Id,
+                                            Email = email,
+                                            DisplayName = displayName,
+                                            Password = password,
+                                            Tags = tags,
+                                            Note = note,
+                                        };
+                                        AccountsDB.UpdateAccount(customAccount);
+                                    }
+
+                                    WriteLine($"Account \"{displayName}\" Successfully Edited!");
+                                    break;
+                                    // ================================== Test Account Update ==================================
                                 }
                             case 19:
                                 {

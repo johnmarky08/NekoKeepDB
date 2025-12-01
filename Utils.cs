@@ -3,7 +3,7 @@ using System.Net.Mail;
 
 namespace NekoKeepDB
 {
-    internal class Utils
+    public class Utils
     {
         private static readonly HashSet<string> AllowedAccountTypes = ["OAuth", "Custom"];
         public static string BCryptEncrypt(string text) => BCrypt.Net.BCrypt.HashPassword(text);

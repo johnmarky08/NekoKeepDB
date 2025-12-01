@@ -30,15 +30,9 @@ namespace NekoKeepDB.Classes
             EncryptedMpin = string.Empty;
         }
 
-        public static bool VerifyPassword(string password)
-        {
-            return Utils.BCryptVerify(password, EncryptedPassword!);
-        }
+        public static bool VerifyPassword(string password) => Utils.BCryptVerify(password, EncryptedPassword!);
 
-        public static bool VerifyMpin(string mpin)
-        {
-            return Utils.BCryptVerify(mpin, EncryptedMpin!);
-        }
+        public static bool VerifyMpin(string mpin) => Utils.BCryptVerify(mpin, EncryptedMpin!);
 
         public static void UpdateLocalDisplayName(string newDisplayName)
         {
@@ -57,15 +51,9 @@ namespace NekoKeepDB.Classes
             if (!Utils.IsAuthenticated()) return;
             Session!.CatPresetId = newCatPresetId;
         }
-        public static void UpdateLocalPassword(string newEncryptedPassword)
-        {
-            EncryptedPassword = newEncryptedPassword;
-        }
+        public static void UpdateLocalPassword(string newEncryptedPassword) => EncryptedPassword = newEncryptedPassword;
 
-        public static void UpdateLocalMpin(string newEncryptedMpin)
-        {
-            EncryptedMpin = newEncryptedMpin;
-        }
+        public static void UpdateLocalMpin(string newEncryptedMpin) => EncryptedMpin = newEncryptedMpin;
 
         public static List<Account> ViewAccounts(bool sortByDate, bool descending)
         {
@@ -74,14 +62,14 @@ namespace NekoKeepDB.Classes
             if (sortByDate)
             {
                 accounts = descending
-                    ? [.. accounts.OrderByDescending(a => a.ViewAccount().UpdatedAt)]
-                    : [.. accounts.OrderBy(a => a.ViewAccount().UpdatedAt)];
+                    ? [.. accounts.OrderByDescending(a => a.Data.UpdatedAt)]
+                    : [.. accounts.OrderBy(a => a.Data.UpdatedAt)];
             }
             else
             {
                 accounts = descending
-                    ? [.. accounts.OrderByDescending(a => a.ViewAccount().DisplayName, StringComparer.OrdinalIgnoreCase)]
-                    : [.. accounts.OrderBy(a => a.ViewAccount().DisplayName, StringComparer.OrdinalIgnoreCase)];
+                    ? [.. accounts.OrderByDescending(a => a.Data.DisplayName, StringComparer.OrdinalIgnoreCase)]
+                    : [.. accounts.OrderBy(a => a.Data.DisplayName, StringComparer.OrdinalIgnoreCase)];
             }
 
             return accounts;
