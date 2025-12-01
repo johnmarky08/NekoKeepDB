@@ -13,6 +13,7 @@ namespace NekoKeepDB.Classes
         protected readonly DateTime? updatedAt = account.UpdatedAt;
 
         public abstract IAccount ViewAccount();
+        public abstract void UpdateAccount(IAccount account);
 
     }
 
@@ -31,6 +32,20 @@ namespace NekoKeepDB.Classes
             Tags = tags,
             UpdatedAt = updatedAt
         };
+
+        public override void UpdateAccount(IOAuthAccount account)
+        {
+            IOAuthAccount updatedAccount = new OAuthAccountDto
+            {
+                Id = id,
+                UserId = userId,
+                DisplayName = account.DisplayName,
+                Email = account.Email,
+                Provider = account.Provider,
+                Note = account.Note,
+                Tags = account.Tags,
+            };
+        }
     }
 
     public class CustomAccount(ICustomAccount customAccount) : Account(customAccount)

@@ -47,9 +47,9 @@ namespace NekoKeepDB.Databases
         // Account Creation - Custom Account
         public static void CreateAccount(ICustomAccount account)
         {
-            byte[]? encryptedPassword;
+            byte[] encryptedPassword;
             if (!Utils.ValidateEmail(account.Email) || (account.Password == null)) return;
-            else encryptedPassword = Crypto.Encrypt(account.Password);
+            else encryptedPassword = Crypto.Encrypt(account.Password)!;
 
             string sql = @"
                 INSERT INTO Accounts (user_id, type, display_name, email, provider, encrypted_password, note)
@@ -223,6 +223,50 @@ namespace NekoKeepDB.Databases
             }
 
             return accounts;
+        }
+
+        // Update an OAuth Account
+        public static void UpdateAccount(IOAuthAccount oAuthAccount)
+        {
+            string sql = @"
+                UPDATE Accounts
+                SET display_name = @display_name,
+                    email = @email,
+                    provider = @provider,
+                    note = @note,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE account_id = @account_id;
+            ";
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@display_name", oAuthAccount.DisplayName);
+            cmd.Parameters.AddWithValue("@email", oAuthAccount.Email);
+            cmd.Parameters.AddWithValue("@provider", oAuthAccount.Provider);
+            cmd.Parameters.AddWithValue("@note", oAuthAccount.Note);
+            cmd.Parameters.AddWithValue("@account_id", oAuthAccount.Id);
+            cmd.ExecuteNonQuery();
+        }
+
+        // Update a Custom Account
+        public static void UpdateAccount(ICustomAccount customAccount)
+        {
+            string sql = @"
+                UPDATE Accounts
+                SET display_name = @display_name,
+                    email = @email,
+                    encrypted_password = @encrypted_password,
+                    note = @note,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE account_id = @account_id;
+            ";
+            byte[] password = Crypto.Encrypt(customAccount.Password!)!;
+
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@display_name", customAccount.DisplayName);
+            cmd.Parameters.AddWithValue("@email", customAccount.Email);
+            cmd.Parameters.AddWithValue("@encrypted_password", password);
+            cmd.Parameters.AddWithValue("@note", customAccount.Note);
+            cmd.Parameters.AddWithValue("@account_id", customAccount.Id);
+            cmd.ExecuteNonQuery();
         }
     }
 }
