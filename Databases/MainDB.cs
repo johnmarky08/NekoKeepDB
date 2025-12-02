@@ -50,7 +50,9 @@ namespace NekoKeepDB.Databases
 
                 CREATE TABLE IF NOT EXISTS Tags (
                     tag_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    display_name VARCHAR(50) NOT NULL
+                    user_id INT NOT NULL,
+                    display_name VARCHAR(50) NOT NULL,
+                    CONSTRAINT fk_tags_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
                 );
 
                 CREATE TABLE IF NOT EXISTS Accounts (

@@ -27,7 +27,7 @@ namespace NekoKeepDB
                 try
                 {
                     WriteLine();
-                    Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU (SOON) ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
+                    Write($"=== USER MENU ===\n{Menu(userMenu)}\n\n=== ACCOUNT MENU ===\n{Menu(accMenu, userMenu.Count + 1)}\n\n=== TAG MENU ===\n{Menu(tagMenu, (userMenu.Count + accMenu.Count) + 1)}\n\n=== BACKUP MENU ===\n{Menu(backupMenu, (userMenu.Count + accMenu.Count + tagMenu.Count) + 1)}\n\n[ -1 ] - Generate Master Key\n[ 0 ] - Exit\n\nWhat do you want to test? ");
 
                     if (int.TryParse(ReadLine(), out int selected))
                     {
@@ -541,7 +541,7 @@ namespace NekoKeepDB
                                     Write("Enter Tag Display Name: ");
                                     string displayName = ReadLine()!;
 
-                                    TagsDB.CreateTag(displayName);
+                                    TagsDB.CreateTag(User.Session!.Id, displayName);
 
                                     WriteLine($"Tag \"{displayName}\" Successfully Created!");
                                     break;
@@ -552,7 +552,7 @@ namespace NekoKeepDB
                                     // ================================== Test Tag Retrieval ==================================
                                     WriteLine("=== TEST TAG RETRIEVAL ===");
                                     if (!Utils.IsAuthenticated()) break;
-                                    List<ITag> tags = TagsDB.RetrieveTags();
+                                    List<ITag> tags = TagsDB.RetrieveTags(User.Session!.Id);
 
                                     foreach (ITag tag in tags) WriteLine($"[ {tag.Id} ] - {tag.DisplayName}");
 
@@ -605,6 +605,50 @@ namespace NekoKeepDB
                                     WriteLine("Tag Successfully Deleted!");
                                     break;
                                     // ================================== Test Tag Deletion ==================================
+                                }
+                            case 23:
+                                {
+                                    // ================================== Test Account Export ==================================
+                                    WriteLine("=== TEST ACCOUNT EXPORT ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter File Path (e.g., C:\\Users\\Marky\\OneDrive\\Desktop\\neko_keep_accounts.xlsx): ");
+                                    string filePath = ReadLine()!;
+
+                                    Write("Sort by Last Updated? (y/n): ");
+                                    string sortByDateInput = ReadLine()!;
+                                    bool sortByDate = sortByDateInput.Equals("y");
+                                    
+                                    Write("Descending Order? (y/n): ");
+                                    string descendingInput = ReadLine()!;
+                                    bool descending = descendingInput.Equals("y");
+
+                                    Write("Enter MPIN to proceed: ");
+                                    string mpin = ReadLine()!;
+                                    if (!User.VerifyMpin(mpin))
+                                    {
+                                        WriteLine("Incorrect MPIN provided!");
+                                        break;
+                                    }
+
+                                    Backup.Export(filePath, sortByDate, descending, mpin);
+                                    WriteLine("Accounts exported successfully!");
+                                    break;
+                                    // ================================== Test Account Export ==================================
+                                }
+                            case 24:
+                                {
+                                    // ================================== Test Account Import ==================================
+                                    WriteLine("=== TEST ACCOUNT IMPORT ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Enter File Path (e.g., C:\\Users\\Marky\\OneDrive\\Desktop\\neko_keep_accounts.xlsx): ");
+                                    string filePath = ReadLine()!;
+
+                                    Backup.Import(filePath);
+                                    WriteLine("Accounts imported successfully!");
+                                    break;
+                                    // ================================== Test Account Import ==================================
                                 }
                             default:
                                 {

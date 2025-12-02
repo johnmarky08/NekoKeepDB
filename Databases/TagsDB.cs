@@ -7,11 +7,12 @@ namespace NekoKeepDB.Databases
     public class TagsDB : MainDB
     {
         // Tag Creation
-        public static void CreateTag(string tagName)
+        public static void CreateTag(int userId, string tagName)
         {
-            string sql = @"INSERT INTO Tags (display_name) VALUES (@display_name);";
+            string sql = @"INSERT INTO Tags (user_id, display_name) VALUES (@user_id, @display_name);";
 
             using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@user_id", userId);
             cmd.Parameters.AddWithValue("@display_name", tagName);
             cmd.ExecuteNonQuery();
         }
@@ -60,13 +61,15 @@ namespace NekoKeepDB.Databases
         }
 
         // Get all tags display name
-        public static List<ITag> RetrieveTags()
+        public static List<ITag> RetrieveTags(int userId)
         {
             List<ITag> tags = [];
 
-            string sql = "SELECT * FROM Tags ORDER BY display_name;";
+            string sql = "SELECT * FROM Tags WHERE user_id = @user_id ORDER BY display_name;";
 
             using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@user_id", userId);
+
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
