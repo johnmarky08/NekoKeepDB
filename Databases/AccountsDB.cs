@@ -11,6 +11,8 @@ namespace NekoKeepDB.Databases
         // Helper for creating filter tags for account
         private static void CreateFilterTags(int accountId, List<ITag> tags)
         {
+            if (tags.Count == 0) return;
+
             foreach (ITag tag in tags)
             {
                 IFilter filter = new FilterDto()
@@ -42,7 +44,13 @@ namespace NekoKeepDB.Databases
             cmd.Parameters.AddWithValue("@note", account.Note);
             cmd.ExecuteNonQuery();
 
-            CreateFilterTags((int)cmd.LastInsertedId, account.Tags);
+            account.Id = (int)cmd.LastInsertedId;
+            CreateFilterTags(account.Id, account.Tags);
+
+            account.Tags = TagsDB.RetriveTags(account.Id);
+            account.UpdatedAt = DateTime.Now;
+            OAuthAccount oAuthAccount = new(account);
+            User.AddSessionAccount(oAuthAccount);
         }
 
         // Account Creation - Custom Account
@@ -67,80 +75,13 @@ namespace NekoKeepDB.Databases
             cmd.Parameters.AddWithValue("@note", account.Note);
             cmd.ExecuteNonQuery();
 
-            CreateFilterTags((int)cmd.LastInsertedId, account.Tags);
-        }
+            account.Id = (int)cmd.LastInsertedId;
+            CreateFilterTags(account.Id, account.Tags);
 
-        // Retrieve an OAuth Account by account ID, returns null if not found
-        public static IOAuthAccount? RetrieveOAuthAccount(int accountId)
-        {
-            string sql = "SELECT * FROM Accounts WHERE account_id = @account_id;";
-
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@account_id", accountId);
-
-            using var reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                int id = reader.GetInt32("account_id");
-                int userId = reader.GetInt32("user_id");
-                string displayName = reader.GetString("display_name");
-                string email = reader.GetString("email");
-                string provider = reader.GetString("provider");
-                string note = reader.GetString("note");
-                reader.Close();
-
-                IOAuthAccount account = new OAuthAccountDto()
-                {
-                    Id = id,
-                    UserId = userId,
-                    DisplayName = displayName,
-                    Email = email,
-                    Provider = provider,
-                    Tags = TagsDB.RetriveTags(accountId),
-                    Note = note,
-                };
-                return account;
-            }
-
-            reader.Close();
-            return null;
-        }
-
-        // Retrieve a Custom Account by account ID, returns null if not found
-        public static ICustomAccount? RetrieveCustomAccount(int accountId)
-        {
-            string sql = "SELECT * FROM Accounts WHERE account_id = @account_id;";
-
-            using var cmd = new MySqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@account_id", accountId);
-
-            using var reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                int ord = reader.GetOrdinal("encrypted_password");
-                int id = reader.GetInt32("account_id");
-                int userId = reader.GetInt32("user_id");
-                string displayName = reader.GetString("display_name");
-                string email = reader.GetString("email");
-                string password = Crypto.Decrypt(reader.GetFieldValue<byte[]>(ord))!;
-                string note = reader.GetString("note");
-
-                reader.Close();
-                ICustomAccount account = new CustomAccountDto()
-                {
-                    Id = id,
-                    UserId = userId,
-                    DisplayName = displayName,
-                    Email = email,
-                    Password = password,
-                    Tags = TagsDB.RetriveTags(accountId),
-                    Note = note,
-                };
-                return account;
-            }
-
-            reader.Close();
-            return null;
+            account.Tags = TagsDB.RetriveTags(account.Id);
+            account.UpdatedAt = DateTime.Now;
+            CustomAccount customAccount = new(account);
+            User.AddSessionAccount(customAccount);
         }
 
         // Retrieve all Accounts
@@ -270,7 +211,7 @@ namespace NekoKeepDB.Databases
             cmd.ExecuteNonQuery();
 
             OAuthAccount account = (OAuthAccount)User.Session!.Accounts!.FirstOrDefault(a => a.Data.Id == oAuthAccount.Id)!;
-            UpdateAccountFilters(oAuthAccount.Id, [.. account.Data.Tags], [.. oAuthAccount.Tags]);
+            UpdateAccountFilters(oAuthAccount.Id, account.Data.Tags, oAuthAccount.Tags);
             account.UpdateAccount(oAuthAccount);
         }
 
@@ -297,8 +238,19 @@ namespace NekoKeepDB.Databases
             cmd.ExecuteNonQuery();
 
             CustomAccount account = (CustomAccount)User.Session!.Accounts!.FirstOrDefault(a => a.Data.Id == customAccount.Id)!;
-            UpdateAccountFilters(customAccount.Id, [.. account.Data.Tags], [.. customAccount.Tags]);
+            UpdateAccountFilters(customAccount.Id, account.Data.Tags, customAccount.Tags);
             account.UpdateAccount(customAccount);
+        }
+
+        // Delete an Account
+        public static void DeleteAccount(int accountId)
+        {
+            string sql = "DELETE FROM Accounts WHERE account_id = @account_id;";
+            using var cmd = new MySqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@account_id", accountId);
+            cmd.ExecuteNonQuery();
+            
+            User.RemoveSessionAccount(accountId);
         }
     }
 }

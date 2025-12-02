@@ -1,4 +1,5 @@
-﻿using NekoKeepDB.Interfaces;
+﻿using NekoKeepDB.Databases;
+using NekoKeepDB.Interfaces;
 
 namespace NekoKeepDB.Classes
 {
@@ -42,6 +43,8 @@ namespace NekoKeepDB.Classes
         public void UpdateAccount(IOAuthAccount updatedOAuthAccount)
         {
             base.UpdateAccount(updatedOAuthAccount);
+            tags = TagsDB.RetriveTags(id);
+            updatedAt = DateTime.Now;
             provider = updatedOAuthAccount.Provider;
         }
     }
@@ -63,6 +66,8 @@ namespace NekoKeepDB.Classes
         public void UpdateAccount(ICustomAccount updatedCustomAccount)
         {
             base.UpdateAccount(updatedCustomAccount);
+            tags = TagsDB.RetriveTags(id);
+            updatedAt = DateTime.Now;
             password = updatedCustomAccount.Password!;
         }
 

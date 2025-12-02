@@ -74,5 +74,17 @@ namespace NekoKeepDB.Classes
 
             return accounts;
         }
+
+        public static void AddSessionAccount(Account newAccount)
+        {
+            if (!Utils.IsAuthenticated()) return;
+            Session!.Accounts!.Add(newAccount);
+        }
+
+        public static void RemoveSessionAccount(int accountId)
+        {
+            if (!Utils.IsAuthenticated()) return;
+            Session!.Accounts = [.. Session!.Accounts!.Where(a => a.Data.Id != accountId)];
+        }
     }
 }
