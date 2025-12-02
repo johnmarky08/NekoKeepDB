@@ -59,20 +59,22 @@ namespace NekoKeepDB.Classes
         {
             List<Account> accounts = Session!.Accounts!;
 
-            if (sortByDate)
-            {
-                accounts = descending
-                    ? [.. accounts.OrderByDescending(a => a.Data.UpdatedAt)]
-                    : [.. accounts.OrderBy(a => a.Data.UpdatedAt)];
-            }
-            else
-            {
-                accounts = descending
-                    ? [.. accounts.OrderByDescending(a => a.Data.DisplayName, StringComparer.OrdinalIgnoreCase)]
-                    : [.. accounts.OrderBy(a => a.Data.DisplayName, StringComparer.OrdinalIgnoreCase)];
-            }
+            // Build the base comparison function
+            static int comparisonByDate(Account leftAccount, Account rightAccount) =>
+                DateTime.Compare(leftAccount.Data.UpdatedAt!.Value, rightAccount.Data.UpdatedAt!.Value);
 
-            return accounts;
+            static int comparisonByDisplayName(Account leftAccount, Account rightAccount) =>
+                string.Compare(leftAccount.Data.DisplayName, rightAccount.Data.DisplayName, StringComparison.OrdinalIgnoreCase);
+
+            Comparison<Account> chosenComparison = sortByDate ? comparisonByDate : comparisonByDisplayName;
+
+            // If descending is requested, invert the comparison
+            Comparison<Account> finalComparison = descending
+                ? (leftAccount, rightAccount) => -chosenComparison(leftAccount, rightAccount)
+                : chosenComparison;
+
+            // Use the merge sort to return a new sorted list
+            return Sort.MergeSort(accounts, finalComparison);
         }
 
         public static void AddSessionAccount(Account newAccount)

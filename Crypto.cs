@@ -4,7 +4,11 @@ using static System.Console;
 
 namespace NekoKeepDB
 {
-    // AES-256 Cryptography
+    /**
+     * AES-256-GCM Cryptography
+     * Space and Time Complexity: O(n) where n is the size of the plaintext/ciphertext in bytes (Both encryption and decryption)
+     */
+
     public static class Crypto
     {
         // Generate a cryptographically secure random key and return Base64
