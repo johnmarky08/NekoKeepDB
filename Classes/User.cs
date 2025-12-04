@@ -59,7 +59,7 @@ namespace NekoKeepDB.Classes
         public static List<Account> ViewAccounts(bool sortByDate, bool descending, List<ITag> tags)
         {
             HashSet<int> accountIds = FiltersDB.GetAccountIdsByTags(tags);
-            List<Account> accounts = [.. Session!.Accounts!.Where(account => accountIds.Contains(account.Data.Id))];
+            List<Account> accounts = tags.Count == 0 ? [.. Session!.Accounts!] : [.. Session!.Accounts!.Where(account => accountIds.Contains(account.Data.Id))];
 
             // Build the base comparison function
             static int comparisonByDate(Account leftAccount, Account rightAccount) =>

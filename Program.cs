@@ -12,7 +12,7 @@ namespace NekoKeepDB
             DotNetEnv.Env.Load();
             MainDB.Connect();
             WriteLine("Database Successfully Connected!");
-            // MainDB.DropAllTables(); // Uncomment to drop tables first
+            // MainDB.DropAllTables(); // Uncomment to drop tables 
             MainDB.CreateAllTables();
             WriteLine("Tables Successfully Created!");
 
@@ -320,7 +320,7 @@ namespace NekoKeepDB
                                     
                                     Write("Enter Account Tag IDs (comma-separated): ");
                                     string? tagsInput = ReadLine();
-                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : [];
 
                                     var accounts = User.ViewAccounts(true, false, tags);
 
@@ -350,7 +350,7 @@ namespace NekoKeepDB
 
                                     Write("Enter Account Tag IDs (comma-separated): ");
                                     string? tagsInput = ReadLine();
-                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : [];
 
                                     var accounts = User.ViewAccounts(true, true, tags);
 
@@ -380,7 +380,7 @@ namespace NekoKeepDB
 
                                     Write("Enter Account Tag IDs (comma-separated): ");
                                     string? tagsInput = ReadLine();
-                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : [];
 
                                     var accounts = User.ViewAccounts(false, false, tags);
 
@@ -410,7 +410,7 @@ namespace NekoKeepDB
 
                                     Write("Enter Account Tag IDs (comma-separated): ");
                                     string? tagsInput = ReadLine();
-                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : [];
 
                                     var accounts = User.ViewAccounts(false, true, tags);
 

@@ -31,10 +31,12 @@ namespace NekoKeepDB.Databases
         // Get Account Ids
         public static HashSet<int> GetAccountIdsByTags(List<ITag> tags)
         {
+            var accountIds = new HashSet<int>();
+            if (tags.Count == 0) return accountIds;
+
             int[] tagIds = [.. tags.Select(t => t.Id)];
             string parameters = string.Join(",", tagIds.Select((id, i) => $"@tag_id_{i}"));
             string sql = @$"SELECT * FROM Filters WHERE tag_id IN ({parameters});";
-            var accountIds = new HashSet<int>();
 
             using var cmd = new MySqlCommand(sql, connection);
             for (int i = 0; i < tagIds.Length; i++)
