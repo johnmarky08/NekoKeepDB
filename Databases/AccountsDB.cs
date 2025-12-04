@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using NekoKeepDB.Classes;
 using NekoKeepDB.Interfaces;
+using Org.BouncyCastle.Crypto;
 using System.Data;
 
 namespace NekoKeepDB.Databases
@@ -47,7 +48,7 @@ namespace NekoKeepDB.Databases
             account.Id = (int)cmd.LastInsertedId;
             CreateFilterTags(account.Id, account.Tags);
 
-            account.Tags = TagsDB.RetriveTags(account.Id);
+            account.Tags = TagsDB.RetrieveAccountTags(account.Id);
             account.UpdatedAt = DateTime.Now;
             OAuthAccount oAuthAccount = new(account);
             User.AddSessionAccount(oAuthAccount);
@@ -78,7 +79,7 @@ namespace NekoKeepDB.Databases
             account.Id = (int)cmd.LastInsertedId;
             CreateFilterTags(account.Id, account.Tags);
 
-            account.Tags = TagsDB.RetriveTags(account.Id);
+            account.Tags = TagsDB.RetrieveAccountTags(account.Id);
             account.UpdatedAt = DateTime.Now;
             CustomAccount customAccount = new(account);
             User.AddSessionAccount(customAccount);
@@ -139,7 +140,7 @@ namespace NekoKeepDB.Databases
                         DisplayName = row.DisplayName,
                         Email = row.Email,
                         Provider = row.Provider!,
-                        Tags = TagsDB.RetriveTags(row.AccountId),
+                        Tags = TagsDB.RetrieveAccountTags(row.AccountId),
                         Note = row.Note,
                         UpdatedAt = row.UpdatedAt
                     };
@@ -155,7 +156,7 @@ namespace NekoKeepDB.Databases
                         DisplayName = row.DisplayName,
                         Email = row.Email,
                         Password = Crypto.Decrypt(row.EncryptedPassword!)!,
-                        Tags = TagsDB.RetriveTags(row.AccountId),
+                        Tags = TagsDB.RetrieveAccountTags(row.AccountId),
                         Note = row.Note,
                         UpdatedAt = row.UpdatedAt
                     };
@@ -249,7 +250,7 @@ namespace NekoKeepDB.Databases
             using var cmd = new MySqlCommand(sql, connection);
             cmd.Parameters.AddWithValue("@account_id", accountId);
             cmd.ExecuteNonQuery();
-            
+
             User.RemoveSessionAccount(accountId);
         }
     }

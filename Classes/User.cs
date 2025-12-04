@@ -1,4 +1,5 @@
-﻿using NekoKeepDB.Interfaces;
+﻿using NekoKeepDB.Databases;
+using NekoKeepDB.Interfaces;
 
 namespace NekoKeepDB.Classes
 {
@@ -55,9 +56,10 @@ namespace NekoKeepDB.Classes
 
         public static void UpdateLocalMpin(string newEncryptedMpin) => EncryptedMpin = newEncryptedMpin;
 
-        public static List<Account> ViewAccounts(bool sortByDate, bool descending)
+        public static List<Account> ViewAccounts(bool sortByDate, bool descending, List<ITag> tags)
         {
-            List<Account> accounts = Session!.Accounts!;
+            HashSet<int> accountIds = FiltersDB.GetAccountIdsByTags(tags);
+            List<Account> accounts = [.. Session!.Accounts!.Where(account => accountIds.Contains(account.Data.Id))];
 
             // Build the base comparison function
             static int comparisonByDate(Account leftAccount, Account rightAccount) =>

@@ -11,7 +11,8 @@ namespace NekoKeepDB
         public static void Export(string filePath, bool sortByDate, bool descending, string mpin)
         {
             // Get the accounts using your existing method
-            var accounts = User.ViewAccounts(sortByDate, descending);
+            List<ITag> allTags = TagsDB.RetrieveTags(User.Session!.Id);
+            var accounts = User.ViewAccounts(sortByDate, descending, allTags);
 
             // Set the license context for EPPlus
             ExcelPackage.License.SetNonCommercialPersonal("NekoKeep Project");

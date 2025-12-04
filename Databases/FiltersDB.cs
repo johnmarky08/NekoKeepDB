@@ -27,5 +27,26 @@ namespace NekoKeepDB.Databases
             cmd.Parameters.AddWithValue("@tag_id", filter.TagId);
             cmd.ExecuteNonQuery();
         }
+
+        // Get Account Ids
+        public static HashSet<int> GetAccountIdsByTags(List<ITag> tags)
+        {
+            int[] tagIds = [.. tags.Select(t => t.Id)];
+            string parameters = string.Join(",", tagIds.Select((id, i) => $"@tag_id_{i}"));
+            string sql = @$"SELECT * FROM Filters WHERE tag_id IN ({parameters});";
+            var accountIds = new HashSet<int>();
+
+            using var cmd = new MySqlCommand(sql, connection);
+            for (int i = 0; i < tagIds.Length; i++)
+            {
+                cmd.Parameters.AddWithValue($"@tag_id_{i}", tagIds[i]);
+            }
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) accountIds.Add(reader.GetInt32("account_id"));
+            reader.Close();
+
+            return accountIds;
+        }
     }
 }

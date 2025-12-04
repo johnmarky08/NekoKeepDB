@@ -60,8 +60,9 @@ namespace NekoKeepDB
         }
 
         // Return a new list of Accounts sorted by Levenshtein distance, excluding non-matches
-        public static List<Account> GetSortedMatchesByLevenshtein(string searchKeyword, List<Account> candidateAccounts)
+        public static List<Account> Get(string searchKeyword)
         {
+            List<Account> candidateAccounts = User.Session!.Accounts!;
             string lowerCaseKeyword = searchKeyword.ToLower();
 
             return [.. candidateAccounts

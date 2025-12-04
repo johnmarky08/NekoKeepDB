@@ -18,7 +18,7 @@ namespace NekoKeepDB.Databases
         }
 
         // Retrieve All tags from an account
-        public static List<ITag> RetriveTags(int accountId)
+        public static List<ITag> RetrieveAccountTags(int accountId)
         {
             string sql = @"SELECT tag_id FROM Filters WHERE account_id = @account_id;";
 
@@ -60,7 +60,7 @@ namespace NekoKeepDB.Databases
             return null;
         }
 
-        // Get all tags display name
+        // Get all tags
         public static List<ITag> RetrieveTags(int userId)
         {
             List<ITag> tags = [];

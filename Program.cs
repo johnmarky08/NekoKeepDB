@@ -17,7 +17,7 @@ namespace NekoKeepDB
             WriteLine("Tables Successfully Created!");
 
             List<string> userMenu = ["Register", "Login", "Logout", "Change Password", "Change MPIN", "Change Email", "Change Display Name", "Change Cat Theme", "View User Info", "Delete Account"];
-            List<string> accMenu = ["Add Account", "Search Accounts (Last Updated - Ascending)", "Search Accounts (Last Updated - Descending)", "Search Accounts (Name - Ascending)", "Search Accounts (Name - Descending)", "View Password", "Update Account", "Delete Account"];
+            List<string> accMenu = ["Add Account", "Filter Accounts (Last Updated - Ascending)", "Filter Accounts (Last Updated - Descending)", "Filter Accounts (Name - Ascending)", "Filter Accounts (Name - Descending)", "View Password", "Update Account", "Delete Account", "Search an Account"];
             List<string> tagMenu = ["Add Tag", "View Tags", "Update Tag", "Delete Tag"];
             List<string> backupMenu = ["Export", "Import"];
             string Menu(List<string> menuList, int num = 1) => string.Join("\n", menuList.Select(menuItem => $"[ {menuList.IndexOf(menuItem) + num} ] - {menuItem}"));
@@ -317,8 +317,12 @@ namespace NekoKeepDB
                                     WriteLine("=== TEST ACCOUNT RETRIEVAL ===");
                                     WriteLine("> By Last Updated (Ascending)");
                                     if (!Utils.IsAuthenticated()) break;
+                                    
+                                    Write("Enter Account Tag IDs (comma-separated): ");
+                                    string? tagsInput = ReadLine();
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
 
-                                    var accounts = User.ViewAccounts(true, false);
+                                    var accounts = User.ViewAccounts(true, false, tags);
 
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
@@ -344,7 +348,11 @@ namespace NekoKeepDB
                                     WriteLine("> By Last Updated (Descending)");
                                     if (!Utils.IsAuthenticated()) break;
 
-                                    var accounts = User.ViewAccounts(true, true);
+                                    Write("Enter Account Tag IDs (comma-separated): ");
+                                    string? tagsInput = ReadLine();
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+
+                                    var accounts = User.ViewAccounts(true, true, tags);
 
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
@@ -370,7 +378,11 @@ namespace NekoKeepDB
                                     WriteLine("> By Display Name (Ascending)");
                                     if (!Utils.IsAuthenticated()) break;
 
-                                    var accounts = User.ViewAccounts(false, false);
+                                    Write("Enter Account Tag IDs (comma-separated): ");
+                                    string? tagsInput = ReadLine();
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+
+                                    var accounts = User.ViewAccounts(false, false, tags);
 
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
@@ -396,7 +408,11 @@ namespace NekoKeepDB
                                     WriteLine("> By Display Name (Descending)");
                                     if (!Utils.IsAuthenticated()) break;
 
-                                    var accounts = User.ViewAccounts(false, true);
+                                    Write("Enter Account Tag IDs (comma-separated): ");
+                                    string? tagsInput = ReadLine();
+                                    List<ITag> tags = !string.IsNullOrWhiteSpace(tagsInput) ? [.. tagsInput.Split(",").Select(tag => (ITag)(new TagDto() { Id = int.Parse(tag) }))] : TagsDB.RetrieveTags(User.Session!.Id);
+
+                                    var accounts = User.ViewAccounts(false, true, tags);
 
                                     WriteLine("\n=== OAUTH ACCOUNTS ===");
                                     foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
@@ -534,6 +550,34 @@ namespace NekoKeepDB
                                 }
                             case 19:
                                 {
+                                    // ================================== Test Search Account ==================================
+                                    WriteLine("=== TEST SEARCH ACCOUNT ===");
+                                    if (!Utils.IsAuthenticated()) break;
+
+                                    Write("Search: ");
+                                    string search = ReadLine()!;
+
+                                    List<Account> accounts = Search.Get(search);
+
+                                    WriteLine("\n=== OAUTH ACCOUNTS ===");
+                                    foreach (OAuthAccount accountData in accounts.OfType<OAuthAccount>().ToList())
+                                    {
+                                        IOAuthAccount account = accountData.Data;
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Provider: {account.Provider} - Tags: {(account.Tags.Count != 0 ? string.Join(", ", account.Tags.Select(tag => tag.DisplayName)) : "No Tag")} - Note: {(account.Note ?? "No Note")}");
+                                    }
+
+                                    WriteLine("\n=== CUSTOM ACCOUNTS ===");
+                                    foreach (CustomAccount accountData in accounts.OfType<CustomAccount>().ToList())
+                                    {
+                                        ICustomAccount account = accountData.Data;
+                                        WriteLine($"[ {account.Id} ] - User Id: {account.UserId} - Display Name: {account.DisplayName} - Email: {account.Email} - Tags: {(account.Tags.Count != 0 ? string.Join(", ", account.Tags.Select(tag => tag.DisplayName)) : "No Tag")} - Note: {(account.Note ?? "No Note")}");
+                                    }
+
+                                    break;
+                                    // ================================== Test Search Account ==================================
+                                }
+                            case 20:
+                                {
                                     // ================================== Test Tag Creation ==================================
                                     WriteLine("=== TEST TAG CREATION ===");
                                     if (!Utils.IsAuthenticated()) break;
@@ -547,7 +591,7 @@ namespace NekoKeepDB
                                     break;
                                     // ================================== Test Tag Creation ==================================
                                 }
-                            case 20:
+                            case 21:
                                 {
                                     // ================================== Test Tag Retrieval ==================================
                                     WriteLine("=== TEST TAG RETRIEVAL ===");
@@ -559,7 +603,7 @@ namespace NekoKeepDB
                                     break;
                                     // ================================== Test Tag Retrieval ==================================
                                 }
-                            case 21:
+                            case 22:
                                 {
                                     // ================================== Test Modify Tag ==================================
                                     WriteLine("=== TEST TAG MODIFICATION ===");
@@ -587,7 +631,7 @@ namespace NekoKeepDB
                                     break;
                                     // ================================== Test Modify Tag ==================================
                                 }
-                            case 22:
+                            case 23:
                                 {
                                     // ================================== Test Tag Deletion ==================================
                                     WriteLine("=== TEST TAG DELETION ===");
@@ -606,7 +650,7 @@ namespace NekoKeepDB
                                     break;
                                     // ================================== Test Tag Deletion ==================================
                                 }
-                            case 23:
+                            case 24:
                                 {
                                     // ================================== Test Account Export ==================================
                                     WriteLine("=== TEST ACCOUNT EXPORT ===");
@@ -636,7 +680,7 @@ namespace NekoKeepDB
                                     break;
                                     // ================================== Test Account Export ==================================
                                 }
-                            case 24:
+                            case 25:
                                 {
                                     // ================================== Test Account Import ==================================
                                     WriteLine("=== TEST ACCOUNT IMPORT ===");
